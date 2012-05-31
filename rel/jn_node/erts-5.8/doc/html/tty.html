@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html xmlns:fn="http://www.w3.org/2005/02/xpath-functions">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" href="../../../doc/otp_doc.css" type="text/css">
+<title>Erlang -- tty - A command line interface</title>
+</head>
+<body bgcolor="white" text="#000000" link="#0000ff" vlink="#ff00ff" alink="#ff0000"><div id="container">
+<script id="js" type="text/javascript" language="JavaScript" src="../../../doc/js/flipmenu/flipmenu.js"></script><script id="js2" type="text/javascript" src="../../../doc/js/erlresolvelinks.js"></script><script language="JavaScript" type="text/javascript">
+            <!--            
+              function getWinHeight() {
+                var myHeight = 0;
+                if( typeof( window.innerHeight ) == 'number' ) {
+                  //Non-IE
+                  myHeight = window.innerHeight;
+                } else if( document.documentElement && ( document.documentElement.clientWidth || 
+                                                         document.documentElement.clientHeight ) ) {
+                  //IE 6+ in 'standards compliant mode'
+                  myHeight = document.documentElement.clientHeight;
+                } else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
+                  //IE 4 compatible
+                  myHeight = document.body.clientHeight;
+                }
+                return myHeight;            
+              }
+
+              function setscrollpos() {
+                var objf=document.getElementById('loadscrollpos');
+                 document.getElementById("leftnav").scrollTop = objf.offsetTop - getWinHeight()/2;
+              }
+
+              function addEvent(obj, evType, fn){ 
+                if (obj.addEventListener){ 
+                obj.addEventListener(evType, fn, true); 
+                return true; 
+              } else if (obj.attachEvent){ 
+                var r = obj.attachEvent("on"+evType, fn); 
+                return r; 
+              } else { 
+                return false; 
+              } 
+             }
+
+             addEvent(window, 'load', setscrollpos);
+
+             //--></script><div id="leftnav"><div class="innertube">
+<img alt="Erlang logo" src="../../../doc/erlang-logo.png"><br><small><a href="users_guide.html">User's Guide</a><br><a href="index.html">Reference Manual</a><br><a href="release_notes.html">Release Notes</a><br><a href="../pdf/erts-5.8.pdf">PDF</a><br><a href="../../../doc/index.html">Top</a></small><p><strong>Erlang Run-Time System Application (ERTS)</strong><br><strong>User's Guide</strong><br><small>Version 5.8</small></p>
+<br><a href="javascript:openAllFlips()">Expand All</a><br><a href="javascript:closeAllFlips()">Contract All</a><p><small><strong>Chapters</strong></small></p>
+<ul class="flipMenu" imagepath="../../../doc/js/flipmenu">
+<li id="no" title="Match specifications in Erlang" expanded="false">Match specifications in Erlang<ul>
+<li><a href="match_spec.html">
+              Top of chapter
+            </a></li>
+<li title="Grammar"><a href="match_spec.html#id2252388">Grammar</a></li>
+<li title="Function descriptions"><a href="match_spec.html#id2253715">Function descriptions</a></li>
+<li title="Variables and literals"><a href="match_spec.html#id2263661">Variables and literals</a></li>
+<li title="Execution of the match"><a href="match_spec.html#id2269951">Execution of the match</a></li>
+<li title="Differences between match specifications in ETS and tracing"><a href="match_spec.html#id2259160">Differences between match specifications in ETS and tracing</a></li>
+<li title="Examples"><a href="match_spec.html#id2259205">Examples</a></li>
+</ul>
+</li>
+<li id="no" title="How to interpret the Erlang crash dumps" expanded="false">How to interpret the Erlang crash dumps<ul>
+<li><a href="crash_dump.html">
+              Top of chapter
+            </a></li>
+<li title="General information"><a href="crash_dump.html#id2270510">General information</a></li>
+<li title="Memory information"><a href="crash_dump.html#id2252041">Memory information</a></li>
+<li title="Internal table information"><a href="crash_dump.html#id2252069">Internal table information</a></li>
+<li title="Allocated areas"><a href="crash_dump.html#id2271199">Allocated areas</a></li>
+<li title="Allocator"><a href="crash_dump.html#id2271227">Allocator</a></li>
+<li title="Process information"><a href="crash_dump.html#id2271270">Process information</a></li>
+<li title="Port information"><a href="crash_dump.html#id2271522">Port information</a></li>
+<li title="ETS tables"><a href="crash_dump.html#id2271540">ETS tables</a></li>
+<li title="Timers"><a href="crash_dump.html#id2271644">Timers</a></li>
+<li title="Distribution information"><a href="crash_dump.html#id2275192">Distribution information</a></li>
+<li title="Loaded module information"><a href="crash_dump.html#id2275329">Loaded module information</a></li>
+<li title="Fun information"><a href="crash_dump.html#id2275431">Fun information</a></li>
+<li title="Process Data"><a href="crash_dump.html#id2275506">Process Data</a></li>
+<li title="Atoms"><a href="crash_dump.html#id2275595">Atoms</a></li>
+<li title="Disclaimer"><a href="crash_dump.html#id2275614">Disclaimer</a></li>
+</ul>
+</li>
+<li id="no" title="How to implement an alternative carrier for  the Erlang distribution" expanded="false">How to implement an alternative carrier for  the Erlang distribution<ul>
+<li><a href="alt_dist.html">
+              Top of chapter
+            </a></li>
+<li title="Introduction"><a href="alt_dist.html#id2275753">Introduction</a></li>
+<li title="The driver"><a href="alt_dist.html#id2275869">The driver</a></li>
+<li title="Putting it all together"><a href="alt_dist.html#id2277487">Putting it all together</a></li>
+</ul>
+</li>
+<li id="no" title="The Abstract Format" expanded="false">The Abstract Format<ul>
+<li><a href="absform.html">
+              Top of chapter
+            </a></li>
+<li title="Module declarations and forms"><a href="absform.html#id2277800">Module declarations and forms</a></li>
+<li title="Atomic literals"><a href="absform.html#id2278024">Atomic literals</a></li>
+<li title="Patterns"><a href="absform.html#id2278091">Patterns</a></li>
+<li title="Expressions"><a href="absform.html#id2278323">Expressions</a></li>
+<li title="Clauses"><a href="absform.html#id2279076">Clauses</a></li>
+<li title="Guards"><a href="absform.html#id2279309">Guards</a></li>
+<li title="The abstract format after preprocessing"><a href="absform.html#id2279603">The abstract format after preprocessing</a></li>
+</ul>
+</li>
+<li id="loadscrollpos" title="tty - A command line interface" expanded="true">tty - A command line interface<ul>
+<li><a href="tty.html">
+              Top of chapter
+            </a></li>
+<li title="Normal Mode"><a href="tty.html#id2279791">Normal Mode</a></li>
+<li title="Shell Break Mode"><a href="tty.html#id2280179">Shell Break Mode</a></li>
+</ul>
+</li>
+<li id="no" title="How to implement a driver" expanded="false">How to implement a driver<ul>
+<li><a href="driver.html">
+              Top of chapter
+            </a></li>
+<li title="Introduction"><a href="driver.html#id2280314">Introduction</a></li>
+<li title="Sample driver"><a href="driver.html#id2280354">Sample driver</a></li>
+<li title="Compiling and linking the sample driver"><a href="driver.html#id2280829">Compiling and linking the sample driver</a></li>
+<li title="Calling a driver as a port in Erlang"><a href="driver.html#id2280870">Calling a driver as a port in Erlang</a></li>
+<li title="Sample asynchronous driver"><a href="driver.html#id2280996">Sample asynchronous driver</a></li>
+<li title="An asynchronous driver using driver_async"><a href="driver.html#id2281333">An asynchronous driver using driver_async</a></li>
+</ul>
+</li>
+<li id="no" title="Inet configuration" expanded="false">Inet configuration<ul>
+<li><a href="inet_cfg.html">
+              Top of chapter
+            </a></li>
+<li title="Introduction"><a href="inet_cfg.html#id2281654">Introduction</a></li>
+<li title="Configuration Data"><a href="inet_cfg.html#id2281778">Configuration Data</a></li>
+<li title="User Configuration Example"><a href="inet_cfg.html#id2282710">User Configuration Example</a></li>
+</ul>
+</li>
+<li id="no" title="External Term Format" expanded="false">External Term Format<ul>
+<li><a href="erl_ext_dist.html">
+              Top of chapter
+            </a></li>
+<li title="Introduction"><a href="erl_ext_dist.html#id2282828">Introduction</a></li>
+<li title="Distribution header"><a href="erl_ext_dist.html#id2283121">Distribution header</a></li>
+<li title="ATOM_CACHE_REF"><a href="erl_ext_dist.html#id2283730">ATOM_CACHE_REF</a></li>
+<li title="SMALL_INTEGER_EXT"><a href="erl_ext_dist.html#id2283807">SMALL_INTEGER_EXT</a></li>
+<li title="INTEGER_EXT"><a href="erl_ext_dist.html#id2283871">INTEGER_EXT</a></li>
+<li title="FLOAT_EXT"><a href="erl_ext_dist.html#id2283936">FLOAT_EXT</a></li>
+<li title="ATOM_EXT"><a href="erl_ext_dist.html#id2284015">ATOM_EXT</a></li>
+<li title="REFERENCE_EXT"><a href="erl_ext_dist.html#id2284112">REFERENCE_EXT</a></li>
+<li title="PORT_EXT"><a href="erl_ext_dist.html#id2284274">PORT_EXT</a></li>
+<li title="PID_EXT"><a href="erl_ext_dist.html#id2284395">PID_EXT</a></li>
+<li title="SMALL_TUPLE_EXT"><a href="erl_ext_dist.html#id2284541">SMALL_TUPLE_EXT</a></li>
+<li title="LARGE_TUPLE_EXT"><a href="erl_ext_dist.html#id2284635">LARGE_TUPLE_EXT</a></li>
+<li title="NIL_EXT"><a href="erl_ext_dist.html#id2284726">NIL_EXT</a></li>
+<li title="STRING_EXT"><a href="erl_ext_dist.html#id2284778">STRING_EXT</a></li>
+<li title="LIST_EXT"><a href="erl_ext_dist.html#id2284873">LIST_EXT</a></li>
+<li title="BINARY_EXT"><a href="erl_ext_dist.html#id2284993">BINARY_EXT</a></li>
+<li title="SMALL_BIG_EXT"><a href="erl_ext_dist.html#id2285092">SMALL_BIG_EXT</a></li>
+<li title="LARGE_BIG_EXT"><a href="erl_ext_dist.html#id2285202">LARGE_BIG_EXT</a></li>
+<li title="NEW_REFERENCE_EXT"><a href="erl_ext_dist.html#id2285307">NEW_REFERENCE_EXT</a></li>
+<li title="SMALL_ATOM_EXT"><a href="erl_ext_dist.html#id2285484">SMALL_ATOM_EXT</a></li>
+<li title="FUN_EXT"><a href="erl_ext_dist.html#id2285592">FUN_EXT</a></li>
+<li title="NEW_FUN_EXT"><a href="erl_ext_dist.html#id2285845">NEW_FUN_EXT</a></li>
+<li title="EXPORT_EXT"><a href="erl_ext_dist.html#id2286231">EXPORT_EXT</a></li>
+<li title="BIT_BINARY_EXT"><a href="erl_ext_dist.html#id2286376">BIT_BINARY_EXT</a></li>
+<li title="NEW_FLOAT_EXT"><a href="erl_ext_dist.html#id2286486">NEW_FLOAT_EXT</a></li>
+</ul>
+</li>
+<li id="no" title="Distribution Protocol" expanded="false">Distribution Protocol<ul>
+<li><a href="erl_dist_protocol.html">
+              Top of chapter
+            </a></li>
+<li title="EPMD Protocol"><a href="erl_dist_protocol.html#id2286679">EPMD Protocol</a></li>
+<li title="Handshake"><a href="erl_dist_protocol.html#id2288020">Handshake</a></li>
+<li title="Protocol between connected nodes"><a href="erl_dist_protocol.html#id2288038">Protocol between connected nodes</a></li>
+<li title="New Ctrlmessages for distrvsn = 1 (OTP R4)"><a href="erl_dist_protocol.html#id2288492">New Ctrlmessages for distrvsn = 1 (OTP R4)</a></li>
+<li title="New Ctrlmessages for distrvsn = 2"><a href="erl_dist_protocol.html#id2288593">New Ctrlmessages for distrvsn = 2</a></li>
+<li title="New Ctrlmessages for distrvsn = 3 (OTP R5C)"><a href="erl_dist_protocol.html#id2288605">New Ctrlmessages for distrvsn = 3 (OTP R5C)</a></li>
+<li title="New Ctrlmessages for distrvsn = 4 (OTP R6)"><a href="erl_dist_protocol.html#id2288617">New Ctrlmessages for distrvsn = 4 (OTP R6)</a></li>
+</ul>
+</li>
+</ul>
+</div></div>
+<div id="content">
+<div class="innertube">
+<h1>5 tty - A command line interface</h1>
+  
+  <p><span class="code">tty</span> is a simple command line interface program where keystrokes are collected and interpreted. Completed lines are sent to the shell for interpretation. There is a simple history mechanism, which saves previous lines. These can be edited before sending them to the shell.
+    <span class="code">tty</span> is started when Erlang is started with the command:<br></p>
+  <p><strong>erl</strong></p>
+  <p><span class="code">tty</span> operates in one of two modes:<br></p>
+  <ul>
+    <li>
+      <p><strong>normal mode</strong>, in which lines of text can be edited and sent to the shell.</p>
+    </li>
+    <li>
+      <p><strong>shell break</strong> mode, which allows the user to kill the current shell, start multiple shells etc. Shell break mode is started by typing <strong>Control G</strong>.</p>
+    </li>
+  </ul>
+
+  <h3><a name="id2279791">5.1 
+        Normal Mode</a></h3>
+    
+    <p>In normal mode keystrokes from the user are collected and interpreted by <span class="code">tty</span>. Most of the <strong>emacs</strong> line editing commands are supported. The following is a complete list of the supported line editing commands.<br></p>
+    <p><strong>Note:</strong>	The notation <span class="code">C-a</span> means pressing the control key and the letter <span class="code">a</span> simultaneously. <span class="code">M-f</span> means pressing the <span class="code">ESC</span> key followed by the letter <span class="code">f</span>. 
+      </p>
+    <table border="1" cellpadding="2" cellspacing="0">
+<tr>
+        <td align="left" valign="middle"><strong>Key Sequence</strong></td>
+        <td align="left" valign="middle"><strong>Function</strong></td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-a</td>
+        <td align="left" valign="middle">Beginning of line</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-b</td>
+        <td align="left" valign="middle">Backward character</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">M-b</td>
+        <td align="left" valign="middle">Backward word</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-d</td>
+        <td align="left" valign="middle">Delete character</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">M-d</td>
+        <td align="left" valign="middle">Delete word</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-e</td>
+        <td align="left" valign="middle">End of line</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-f</td>
+        <td align="left" valign="middle">Forward character</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">M-f</td>
+        <td align="left" valign="middle">Forward word</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-g</td>
+        <td align="left" valign="middle">Enter shell break mode</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-k</td>
+        <td align="left" valign="middle">Kill line</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-l</td>
+        <td align="left" valign="middle">Redraw line</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-n</td>
+        <td align="left" valign="middle">Fetch next line from the history buffer</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-p</td>
+        <td align="left" valign="middle">Fetch previous line from the history buffer</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-t</td>
+        <td align="left" valign="middle">Transpose characters</td>
+      </tr>
+<tr>
+        <td align="left" valign="middle">C-y</td>
+        <td align="left" valign="middle">Insert previously killed text</td>
+      </tr>
+</table>
+<em>Table
+        5.1:
+         
+        tty text editing</em>
+  
+
+  <h3><a name="id2280179">5.2 
+        Shell Break Mode</a></h3>
+    
+    <p><strong>tty</strong> enters <strong>shell</strong> break mode when you type <strong>Control G</strong>. In this mode you can:<br></p>
+    <ul>
+      <li>
+        <p>Kill or suspend the current shell</p>
+      </li>
+      <li>
+        <p>Connect to a suspended shell</p>
+      </li>
+      <li>
+        <p>Start a new shell</p>
+      </li>
+    </ul>
+  
+</div>
+<div class="footer">
+<hr>
+<p>Copyright © 1997-2010 Ericsson AB. All Rights Reserved.</p>
+</div>
+</div>
+</div></body>
+</html>
