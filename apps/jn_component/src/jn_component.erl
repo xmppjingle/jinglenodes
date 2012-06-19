@@ -13,18 +13,16 @@
 
 -define(SERVER, ?MODULE).
 
--import(config).
--import(file).
-
 -include_lib("exmpp/include/exmpp.hrl").
 -include_lib("exmpp/include/exmpp_client.hrl").
+-include_lib("ecomponent/include/ecomponent.hrl").
 -include("../include/jn_component.hrl").
 
 %% API
--export([get_stats/0, prepare_id/1, unprepare_id/1, is_allowed/2, get_port/1]).
+-export([get_stats/0, get_port/1]).
 
 %% gen_server callbacks
--export([start_link/0, init/12, init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 start_link() ->
@@ -41,30 +39,22 @@ start_link() ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([]) -> init(["./etc/jn_component.cfg"]);
-init([CFile]) ->
-	?INFO_MSG("Loading Application",[]),
-	case file:consult(CFile) of
-		{ok, Cfg} ->
-			?INFO_MSG("Loading Config...~n",[]),
-			init(                   get(jid, Cfg),
-                                get(pass, Cfg),
-                                get(server, Cfg),
-                                get(port, Cfg),
-                                get(public_ip, Cfg),
-                                get(channel_timeout, Cfg),
-                                get(whitelist, Cfg),
-                                get(max_per_period, Cfg),
-                                get(period_seconds, Cfg),
-                                get(init_port, Cfg),
-                                get(end_port, Cfg),
-			        get(handler, Cfg));
-		_ -> 	
-				?INFO_MSG("Invalid Config File[~p] ~n",[filename:absname("")]),
-				{error, config_missing}
-	end.
 
-init(JID, Pass, Server, Port, PubIP, ChannelTimeout, WhiteDomain, MaxPerPeriod, PeriodSeconds, InitPort, EndPort, Handler) ->
+init(_) ->
+	?INFO_MSG("Loading Application",[]),
+	ChannelTimeout = application:get_env(jn_component, channel_timeout),
+	{InitPort, EndPort} = application:get_env(jn_component, port_range),
+	{MaxPerPeriod, PeriodSeconds} = application:get_env(jn_component, throttle),
+	WhiteDomain = application:get_env(jn_component, whitelist),
+	PubIP = application:get_env(jn_component, public_ip),
+	Handler = application:get_env(jn_component, handler),
+	prepare_tables(), 
+	mod_monitor:init(),
+    	ChannelMonitor = scheduleChannelPurge(5000, [], ChannelTimeout),
+    	PortMonitor = schedulePortMonitor(InitPort, EndPort),
+    	{ok, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler}}.
+
+prepare_tables() ->
     mnesia:create_table(jn_relay_service,
             [{disc_only_copies, [node()]},
              {type, set},
@@ -72,13 +62,7 @@ init(JID, Pass, Server, Port, PubIP, ChannelTimeout, WhiteDomain, MaxPerPeriod, 
     mnesia:create_table(jn_tracker_service,
             [{disc_only_copies, [node()]},
              {type, set},
-             {attributes, record_info(fields, jn_tracker_service)}]),
-    application:start(exmpp),
-    mod_monitor:init(),
-    ChannelMonitor = scheduleChannelPurge(5000, [], ChannelTimeout),
-    PortMonitor = schedulePortMonitor(InitPort, EndPort),
-    {_, XmppCom} = make_connection(JID, Pass, Server, Port),
-    {ok, #state{xmppCom=XmppCom, jid=JID, pass=Pass, server=Server, port=Port, pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=[list_to_binary(S) || S <- string:tokens(WhiteDomain, ",")], maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler}}.
+             {attributes, record_info(fields, jn_tracker_service)}]).
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -86,32 +70,17 @@ init(JID, Pass, Server, Port, PubIP, ChannelTimeout, WhiteDomain, MaxPerPeriod, 
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info(#received_packet{packet_type=iq, type_attr=Type, raw_packet=IQ, from=From}, #state{handler=Handler}=State) ->
-  	spawn(Handler, pre_process_iq, [Type, IQ, From, State]),
-	{noreply, State};
 
-handle_info({notify_channel, ID, User, Event, Time}, #state{handler=Handler}=State) ->
+handle_info({iq,#params{type=Type, iq=IQ}=Params, Sender}, #jnstate{handler=Handler}=State) ->
+        lager:info("IQ from: ~p with Params: ~p~n", [Sender, Params]),
+        spawn(Handler, process_iq, [Type, IQ, Params, Sender, State]),
+        {noreply, State};
+
+handle_info({notify_channel, ID, User, Event, Time}, #jnstate{handler=Handler}=State) ->
         spawn(Handler, notify_channel, [ID, User, Event, Time, State]),
         {noreply, State};
 
-handle_info({_, tcp_closed}, #state{jid=JID, server=Server, pass=Pass, port=Port}=State) ->
-  ?INFO_MSG("Connection Closed. Trying to Reconnect...~n", []),
-  {_, NewXmppCom} = make_connection(JID, Pass, Server, Port),
-  ?INFO_MSG("Reconnected.~n", []),
-  {noreply, State#state{xmppCom=NewXmppCom}};
-
-handle_info({_,{bad_return_value, _}}, #state{jid=JID, server=Server, pass=Pass, port=Port}=State) ->
-  ?INFO_MSG("Connection Closed. Trying to Reconnect...~n", []),
-  {_, NewXmppCom} = make_connection(JID, Pass, Server, Port),
-  ?INFO_MSG("Reconnected.~n", []),
-  {noreply, State#state{xmppCom=NewXmppCom}};
-
-handle_info(stop, #state{xmppCom=XmppCom}=State) ->
-  ?INFO_MSG("Component Stopped.~n",[]),
-  exmpp_component:stop(XmppCom),
-  {noreply, State};
-
-handle_info({get_active, _}=S,  #state{channelMonitor=ChannelMonitor}=State) ->
+handle_info({get_active, _}=S,  #jnstate{channelMonitor=ChannelMonitor}=State) ->
   ChannelMonitor ! S,
   {noreply, State};
 
@@ -149,7 +118,7 @@ handle_call(Info,_From, _State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, #state{channelMonitor=ChannelMonitor}) ->
+terminate(_Reason, #jnstate{channelMonitor=ChannelMonitor}) ->
 	?INFO_MSG("Terminating Component...", []),
 	ChannelMonitor ! stop,
 	application:stop(exmpp),
@@ -171,41 +140,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-
-make_connection(JID, Pass, Server, Port) -> 
-	XmppCom = exmpp_component:start(),
-	make_connection(XmppCom, JID, Pass, Server, Port, 20).
-make_connection(XmppCom, JID, Pass, Server, Port, 0) -> 
-	exmpp_component:stop(XmppCom),
-	make_connection(JID, Pass, Server, Port);
-make_connection(XmppCom, JID, Pass, Server, Port, Tries) ->
-    ?INFO_MSG("Connecting: ~p Tries Left~n",[Tries]),
-    exmpp_component:auth(XmppCom, JID, Pass),
-    try exmpp_component:connect(XmppCom, Server, Port) of
-	R -> exmpp_component:handshake(XmppCom),
-		?INFO_MSG("Connected.~n",[]),
-		{R, XmppCom}
-	catch
-		Exception -> ?INFO_MSG("Exception: ~p~n",[Exception]),
-		timer:sleep((20-Tries) * 200),
-		make_connection(XmppCom, JID, Pass, Server, Port, Tries-1)
-    end.
-
-prepare_id([]) -> [];
-prepare_id([$<|T]) -> [$x|prepare_id(T)];
-prepare_id([$>|T]) -> [$X|prepare_id(T)];
-prepare_id([H|T]) -> [H|prepare_id(T)].
-
-unprepare_id([]) -> [];
-unprepare_id([$x|T]) -> [$<|unprepare_id(T)];
-unprepare_id([$X|T]) -> [$>|unprepare_id(T)];
-unprepare_id([H|T]) -> [H|unprepare_id(T)].
-
-is_allowed(_, []) -> true;
-is_allowed({_,D,_}, WhiteDomain) ->
-	is_allowed(D, WhiteDomain);
-is_allowed(Domain, WhiteDomain) -> 
-	lists:any(fun(S) -> S == Domain end, WhiteDomain).
 
 get_port(PortMonitor) -> get_port(PortMonitor, 5).
 get_port(_, 0) -> 
@@ -308,10 +242,3 @@ schedule(Period, Relays, Timeout) ->
         schedule(Period, Remain, Timeout)
     end.
 
-get(_Key, []) ->
-  ?ERROR_MSG("Property Not Found: ~p~n", [_Key]),
-  not_found;
-get(Key, [{Key, Value} | _Config]) ->
-  Value;
-get(Key, [{_Other, _Value} | Config]) ->
-  get(Key, Config).

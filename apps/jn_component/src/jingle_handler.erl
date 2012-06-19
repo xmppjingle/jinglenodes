@@ -1,69 +1,49 @@
 -module(jingle_handler).
 
--define(NS_CHANNEL,'http://jabber.org/protocol/jinglenodes#channel').
--define(NAME_CHANNEL,'channel').
--define(NS_CHANNEL_REDIRECT,'http://jabber.org/protocol/jinglenodes#channelredirect').
--define(NS_JINGLE_NODES_s,"http://jabber.org/protocol/jinglenodes").
--define(NS_JINGLE_NODES,'http://jabber.org/protocol/jinglenodes').
--define(NS_JINGLE_NODES_EVENT, 'http://jabber.org/protocol/jinglenodes#event').
--define(NAME_SERVICES,'services').
--define(NS_CHANNEL_s,"http://jabber.org/protocol/jinglenodes#channel").
--define(SERVER, ?MODULE).
-
--import(config).
--import(file).
-
 -include_lib("exmpp/include/exmpp.hrl").
 -include_lib("exmpp/include/exmpp_client.hrl").
 -include("../include/jn_component.hrl").
+-include_lib("ecomponent/include/ecomponent.hrl").
 
 %% API
--export([pre_process_iq/4]).
--export([notify_channel/5]).
+-export([notify_channel/5, allocate_relay/3, process_iq/4]).
 
-notify_channel(ID, {Node, Domain, Resource}, Event, Time, #state{jid=JID, xmppCom=XmppCom}=State) ->
+notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{jid=JID}=State) ->
         ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, JID]),
 	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute('event', Event), exmpp_xml:attribute('id', jn_component:prepare_id(ID)), exmpp_xml:attribute('time', integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
 	SetTo = exmpp_xml:set_attribute(SetBare, to, exmpp_jid:to_list(Node, Domain, Resource)),	
 	SetFrom = exmpp_xml:set_attribute(SetTo, from, JID),
-        exmpp_component:send_packet(XmppCom, SetFrom),
+        ecomponent:send(SetFrom),
 	?INFO_MSG("Notify Sent: ~p ~n", [SetFrom]),
         {ok, State};
-notify_channel(_, _, _, _, #state{}=State)-> {ok, State}.
-
-pre_process_iq(Type, IQ, From, State) ->
-        ?INFO_MSG("Preparing: ~p~n On State:~p~n", [IQ, State]),
-        Payload = exmpp_iq:get_payload(IQ),
-        NS = exmpp_xml:get_ns_as_atom(Payload),
-        ?INFO_MSG("NS:~p~n", [NS]),
-        process_iq(Type, IQ, From, NS, Payload, State).
+notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 
 %% Create Channel and return details
-process_iq("get", IQ, From, ?NS_CHANNEL, _, #state{xmppCom=XmppCom, pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor}=State) ->
+process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, _, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor}=State) ->
     Permitted = jn_component:is_allowed(From, WhiteDomain) andalso mod_monitor:accept(From, MaxPerPeriod, PeriodSeconds),	
 	if Permitted == true ->
 		?INFO_MSG("T: ~p~n", [PortMonitor]),
     		case allocate_relay(ChannelMonitor, From, PortMonitor) of
 		{ok, PortA, PortB, ID} ->
 			?INFO_MSG("Allocated Port for : ~p ~p~n", [From, ID]),
-			Result = exmpp_iq:result(IQ,get_candidate_elem(PubIP, PortA, PortB, ID)),
-			exmpp_component:send_packet(XmppCom, Result),
+			Result = exmpp_iq:result(IQ ,get_candidate_elem(PubIP, PortA, PortB, ID)),
+			ecomponent:send(Result),
 			{ok, State};
 		_ ->
 			?ERROR_MSG("Could Not Allocate Port for : ~p~n", [From]),
 			Error = exmpp_iq:error_without_original(IQ, 'internal-server-error'),
-			exmpp_component:send_packet(XmppCom, Error),
+			ecomponent:send(Error),
 			{error, State}
 		end;
 	true -> 
 		?ERROR_MSG("[Not Acceptable] Could Not Allocate Port for : ~p~n", [From]),
 		Error = exmpp_iq:error_without_original(IQ, 'policy-violation'),
-                exmpp_component:send_packet(XmppCom, Error),
+                ecomponent:send(Error),
 		{error, State}		
 	end;
 
-process_iq("get", IQ, _, ?NS_DISCO_INFO, _, #state{xmppCom=XmppCom}=State) ->
+process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, _, #jnstate{}=State) ->
         Identity = exmpp_xml:element(?NS_DISCO_INFO, 'identity', [exmpp_xml:attribute("category", <<"proxy">>),
                                                       exmpp_xml:attribute("type", <<"relay">>),
                                                       exmpp_xml:attribute("name", <<"Jingle Nodes Relay">>)
@@ -72,30 +52,30 @@ process_iq("get", IQ, _, ?NS_DISCO_INFO, _, #state{xmppCom=XmppCom}=State) ->
         IQRegisterFeature1 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute('var', ?NS_JINGLE_NODES_s)],[]),
         IQRegisterFeature2 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute('var', ?NS_CHANNEL_s)],[]),
         Result = exmpp_iq:result(IQ, exmpp_xml:element(?NS_DISCO_INFO, 'query', [], [Identity, IQRegisterFeature1, IQRegisterFeature2])),
-        exmpp_component:send_packet(XmppCom, Result),
+        ecomponent:send(Result),
 	{ok, State};
 
-process_iq("get", IQ, _, ?NS_JINGLE_NODES, _, #state{jid=JID, xmppCom=XmppCom}=State) ->
+process_iq("get", #params{ns=?NS_JINGLE_NODES, iq=IQ}, _, #jnstate{jid=JID}=State) ->
 	Relay = exmpp_xml:element(undefined, 'relay', [exmpp_xml:attribute('policy',"public"), exmpp_xml:attribute('protocol', "udp"), exmpp_xml:attribute('address', JID)], []),
 	Services = exmpp_xml:element(?NS_JINGLE_NODES, ?NAME_SERVICES, [],[Relay]),
 	Result = exmpp_iq:result(IQ, Services),
-	exmpp_component:send_packet(XmppCom, Result),
+	ecomponent:send(Result),
 	{ok, State};
 
-process_iq("get", IQ, _, ?NS_PING, _, #state{xmppCom=XmppCom}=State) ->
+process_iq("get", #params{ns=?NS_PING, iq=IQ}, _, #jnstate{}=State) ->
         Result = exmpp_iq:result(IQ),
-        exmpp_component:send_packet(XmppCom, Result),
+        ecomponent:send(Result),
         {ok, State};
 
-process_iq("set", IQ, _, ?NS_CHANNEL_REDIRECT, Payload, #state{xmppCom=XmppCom}=State) ->
+process_iq("set", #params{ns=?NS_CHANNEL_REDIRECT, payload=Payload, iq=IQ}, _, #jnstate{}=State) ->
         ID=exmpp_xml:get_attribute(Payload, "id", ""),
         process_redirect(Payload, ID),
         Result = exmpp_iq:result(IQ),
-        exmpp_component:send_packet(XmppCom, Result),
+        ecomponent:send(Result),
         {ok, State};
 
-process_iq(_, IQ, _, _, _, #state{}=State) ->
-	?INFO_MSG("Unknown Request: ~p~n", [IQ]),	    
+process_iq(_, P, _, #jnstate{}=State) ->
+	?INFO_MSG("Unknown Request: ~p~n", [P]),	    
 	{ok, State}.
 
 process_redirect(Payload, PID) when erlang:is_pid(PID) ->
@@ -142,7 +122,7 @@ get_candidate_elem(Host, A, B, ID) ->
 
 allocate_relay(ChannelMonitor, U, PortMonitor) -> allocate_relay(ChannelMonitor, U, 5, PortMonitor).
 allocate_relay(_, U, 0, _) -> 
-	 ?ERROR_MSG("Could Not Allocate Port for : ~p~n", [U]),
+	?ERROR_MSG("Could Not Allocate Port for : ~p~n", [U]),
 	{error, -1, -1};
 allocate_relay(ChannelMonitor, U, Tries, PortMonitor) ->
      	case jn_component:get_port(PortMonitor) of
