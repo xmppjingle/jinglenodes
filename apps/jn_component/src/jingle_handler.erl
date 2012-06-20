@@ -37,7 +37,7 @@ process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubI
 			{error, State}
 		end;
 	true -> 
-		?ERROR_MSG("[Not Acceptable] Could Not Allocate Port for : ~p~n", [From]),
+		?ERROR_MSG("[Not Acceptable] Could Not Allocate Port for : ~p on ~p~n", [From, WhiteDomain]),
 		Error = exmpp_iq:error_without_original(IQ, 'policy-violation'),
                 ecomponent:send(Error),
 		{error, State}		
