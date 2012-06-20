@@ -6,7 +6,7 @@
 -include_lib("ecomponent/include/ecomponent.hrl").
 
 %% API
--export([notify_channel/5, allocate_relay/3, process_iq/4]).
+-export([notify_channel/5, allocate_relay/3, process_iq/3]).
 
 notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{jid=JID}=State) ->
         ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, JID]),
@@ -20,7 +20,7 @@ notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{jid=JID}=Stat
 notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 
 %% Create Channel and return details
-process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, _, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor}=State) ->
+process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor}=State) ->
     Permitted = jn_component:is_allowed(From, WhiteDomain) andalso mod_monitor:accept(From, MaxPerPeriod, PeriodSeconds),	
 	if Permitted == true ->
 		?INFO_MSG("T: ~p~n", [PortMonitor]),
@@ -43,7 +43,7 @@ process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, _, #jnstate{pubIP=P
 		{error, State}		
 	end;
 
-process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, _, #jnstate{}=State) ->
+process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, #jnstate{}=State) ->
         Identity = exmpp_xml:element(?NS_DISCO_INFO, 'identity', [exmpp_xml:attribute("category", <<"proxy">>),
                                                       exmpp_xml:attribute("type", <<"relay">>),
                                                       exmpp_xml:attribute("name", <<"Jingle Nodes Relay">>)
@@ -55,26 +55,26 @@ process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, _, #jnstate{}=State) ->
         ecomponent:send(Result),
 	{ok, State};
 
-process_iq("get", #params{ns=?NS_JINGLE_NODES, iq=IQ}, _, #jnstate{jid=JID}=State) ->
+process_iq("get", #params{ns=?NS_JINGLE_NODES, iq=IQ}, #jnstate{jid=JID}=State) ->
 	Relay = exmpp_xml:element(undefined, 'relay', [exmpp_xml:attribute('policy',"public"), exmpp_xml:attribute('protocol', "udp"), exmpp_xml:attribute('address', JID)], []),
 	Services = exmpp_xml:element(?NS_JINGLE_NODES, ?NAME_SERVICES, [],[Relay]),
 	Result = exmpp_iq:result(IQ, Services),
 	ecomponent:send(Result),
 	{ok, State};
 
-process_iq("get", #params{ns=?NS_PING, iq=IQ}, _, #jnstate{}=State) ->
+process_iq("get", #params{ns=?NS_PING, iq=IQ}, #jnstate{}=State) ->
         Result = exmpp_iq:result(IQ),
         ecomponent:send(Result),
         {ok, State};
 
-process_iq("set", #params{ns=?NS_CHANNEL_REDIRECT, payload=Payload, iq=IQ}, _, #jnstate{}=State) ->
+process_iq("set", #params{ns=?NS_CHANNEL_REDIRECT, payload=Payload, iq=IQ}, #jnstate{}=State) ->
         ID=exmpp_xml:get_attribute(Payload, "id", ""),
         process_redirect(Payload, ID),
         Result = exmpp_iq:result(IQ),
         ecomponent:send(Result),
         {ok, State};
 
-process_iq(_, P, _, #jnstate{}=State) ->
+process_iq(_, P, #jnstate{}=State) ->
 	?INFO_MSG("Unknown Request: ~p~n", [P]),	    
 	{ok, State}.
 

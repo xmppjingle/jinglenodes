@@ -70,9 +70,9 @@ prepare_tables() ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 
-handle_info({iq,#params{type=Type, iq=IQ}=Params, Sender}, #jnstate{handler=Handler}=State) ->
-        lager:info("IQ from: ~p with Params: ~p~n", [Sender, Params]),
-        spawn(Handler, process_iq, [Type, IQ, Params, Sender, State]),
+handle_info({iq,#params{type=Type, iq=IQ}=Params}, #jnstate{handler=Handler}=State) ->
+        lager:info("IQ with Params: ~p~n", [Params]),
+        spawn(Handler, process_iq, [Type, Params, State]),
         {noreply, State};
 
 handle_info({notify_channel, ID, User, Event, Time}, #jnstate{handler=Handler}=State) ->
