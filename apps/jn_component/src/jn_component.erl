@@ -49,7 +49,6 @@ init(_) ->
 	PubIP = application:get_env(jn_component, public_ip),
 	Handler = application:get_env(jn_component, handler),
 	prepare_tables(), 
-	mod_monitor:init(),
     	ChannelMonitor = scheduleChannelPurge(5000, [], ChannelTimeout),
     	PortMonitor = schedulePortMonitor(InitPort, EndPort),
     	{ok, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler}}.
