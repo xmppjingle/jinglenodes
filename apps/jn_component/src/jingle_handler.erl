@@ -21,7 +21,7 @@ notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 
 %% Create Channel and return details
 process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor}=State) ->
-    Permitted = jn_component:is_allowed(From, WhiteDomain) andalso mod_monitor:accept(From, MaxPerPeriod, PeriodSeconds),	
+    Permitted = ecomponent:is_allowed(From, WhiteDomain) andalso mod_monitor:accept(From, MaxPerPeriod, PeriodSeconds),	
 	if Permitted == true ->
 		?INFO_MSG("T: ~p~n", [PortMonitor]),
     		case allocate_relay(ChannelMonitor, From, PortMonitor) of
