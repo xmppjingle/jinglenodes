@@ -10,7 +10,7 @@
 
 notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{jid=JID}=State) ->
         ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, JID]),
-	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute('event', Event), exmpp_xml:attribute('id', jn_component:prepare_id(ID)), exmpp_xml:attribute('time', integer_to_list(Time))], []),
+	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute('event', Event), exmpp_xml:attribute('id', ecomponent:prepare_id(ID)), exmpp_xml:attribute('time', integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
 	SetTo = exmpp_xml:set_attribute(SetBare, to, exmpp_jid:to_list(Node, Domain, Resource)),	
 	SetFrom = exmpp_xml:set_attribute(SetTo, from, JID),
@@ -85,7 +85,7 @@ process_redirect(Payload, ID) when erlang:is_binary(ID) ->
 process_redirect(Payload, IDstr) ->
         try	
 		?INFO_MSG("P Redirect IDstr: ~p [~p]~n", [IDstr, Payload]),	
-		ID = jn_component:unprepare_id(IDstr),
+		ID = ecomponent:unprepare_id(IDstr),
 		?INFO_MSG("P Redirect ID: [~p]~n", [ID]),
 		PID = erlang:list_to_pid(ID),
                 ?INFO_MSG("P Redirect ID: [~p]~n", [ID]),
@@ -117,7 +117,7 @@ get_candidate_elem(Host, A, B, ID) ->
 	Raw_Elem = exmpp_xml:element(?NS_CHANNEL,?NAME_CHANNEL),
         Elem_A = exmpp_xml:set_attribute(Raw_Elem, "localport", A),
         Elem_B = exmpp_xml:set_attribute(Elem_A, "remoteport", B),
-	Elem_C = exmpp_xml:set_attribute(Elem_B, "id", jn_component:prepare_id(ID)),
+	Elem_C = exmpp_xml:set_attribute(Elem_B, "id", ecomponent:prepare_id(ID)),
         exmpp_xml:set_attribute(Elem_C, "host", Host).
 
 allocate_relay(ChannelMonitor, U, PortMonitor) -> allocate_relay(ChannelMonitor, U, 5, PortMonitor).
