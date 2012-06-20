@@ -42,12 +42,12 @@ start_link() ->
 
 init(_) ->
 	?INFO_MSG("Loading Application",[]),
-	ChannelTimeout = application:get_env(jn_component, channel_timeout),
-	{InitPort, EndPort} = application:get_env(jn_component, port_range),
-	{MaxPerPeriod, PeriodSeconds} = application:get_env(jn_component, throttle),
-	WhiteDomain = application:get_env(jn_component, whitelist),
-	PubIP = application:get_env(jn_component, public_ip),
-	Handler = application:get_env(jn_component, handler),
+	{ok, ChannelTimeout} = application:get_env(jn_component, channel_timeout),
+	{ok, {InitPort, EndPort}} = application:get_env(jn_component, port_range),
+	{ok, {MaxPerPeriod, PeriodSeconds}} = application:get_env(jn_component, throttle),
+	{ok, WhiteDomain} = application:get_env(jn_component, whitelist),
+	{ok, PubIP} = application:get_env(jn_component, public_ip),
+	{ok, Handler} = application:get_env(jn_component, handler),
 	prepare_tables(), 
     	ChannelMonitor = scheduleChannelPurge(5000, [], ChannelTimeout),
     	PortMonitor = schedulePortMonitor(InitPort, EndPort),
