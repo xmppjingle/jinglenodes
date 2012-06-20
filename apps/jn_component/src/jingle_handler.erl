@@ -8,14 +8,13 @@
 %% API
 -export([notify_channel/5, allocate_relay/3, process_iq/3]).
 
-notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{jid=JID}=State) ->
-        ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, JID]),
+notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{}=State) ->
+        ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, Time]),
 	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute('event', Event), exmpp_xml:attribute('id', ecomponent:prepare_id(ID)), exmpp_xml:attribute('time', integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
 	SetTo = exmpp_xml:set_attribute(SetBare, to, exmpp_jid:to_list(Node, Domain, Resource)),	
-	SetFrom = exmpp_xml:set_attribute(SetTo, from, JID),
-        ecomponent:send(SetFrom),
-	?INFO_MSG("Notify Sent: ~p ~n", [SetFrom]),
+        ecomponent:send(SetTo),
+	?INFO_MSG("Notify Sent: ~p ~n", [SetTo]),
         {ok, State};
 notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 
