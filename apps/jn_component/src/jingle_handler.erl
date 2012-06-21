@@ -19,7 +19,7 @@ notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{broadcast=BJI
 			ok;
 		_ ->
 			Broadcast = exmpp_xml:set_attribute(SetBare, <<"to">>, BJID),
-			ecomponent:send(Broadcast)
+			ecomponent:send(Broadcast, ?MODULE)
 	end,
 	?INFO_MSG("Notify Sent: ~p ~n", [SetTo]),
         {ok, State};
