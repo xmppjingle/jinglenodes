@@ -49,10 +49,11 @@ init(_) ->
 	{ok, PubIP} = application:get_env(jn_component, public_ip),
 	{ok, Handler} = application:get_env(jn_component, handler),
 	{ok, Broadcast} = application:get_env(jn_component, broadcast),
+	{ok, JID} = application:get_env(ecomponent, jid),
 	prepare_tables(), 
     	ChannelMonitor = scheduleChannelPurge(5000, [], ChannelTimeout),
     	PortMonitor = schedulePortMonitor(InitPort, EndPort),
-    	{ok, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler, broadcast=Broadcast}}.
+    	{ok, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, jid=JID, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler, broadcast=Broadcast}}.
 
 prepare_tables() ->
     mnesia:create_table(jn_relay_service,

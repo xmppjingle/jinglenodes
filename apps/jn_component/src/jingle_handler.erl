@@ -8,18 +8,20 @@
 %% API
 -export([notify_channel/5, allocate_relay/3, process_iq/3]).
 
-notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{broadcast=BJID}=State) ->
+notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast=BJID, jid=CJID}=State) ->
         ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, Time]),
 	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute(<<"event">>, Event), exmpp_xml:attribute(<<"id">>, ecomponent:prepare_id(ID)), exmpp_xml:attribute(<<"time">>, integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
+	From =  erlang:binary_to_list(Node) ++ "@" ++ CJID,
 	SetTo = exmpp_xml:set_attribute(SetBare, <<"to">>, exmpp_jid:to_list(Node, Domain, Resource)),	
         ecomponent:send(SetTo, ?MODULE),
-	case BJID of
+	Broadcast = erlang:apply(notify_handler, notify_channel, [ID, JID, Event, Time, BJID]),
+	case Broadcast of
 		undefined ->
 			ok;
 		_ ->
-			Broadcast = exmpp_xml:set_attribute(SetBare, <<"to">>, BJID),
-			ecomponent:send(Broadcast, ?MODULE)
+			BroadcastFrom = exmpp_xml:set_attribute(Broadcast, <<"from">>, From),
+			ecomponent:send(BroadcastFrom, ?MODULE)
 	end,
 	?INFO_MSG("Notify Sent: ~p ~n", [SetTo]),
         {ok, State};
