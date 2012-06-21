@@ -10,9 +10,9 @@
 
 notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{}=State) ->
         ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, Time]),
-	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute('event', Event), exmpp_xml:attribute('id', ecomponent:prepare_id(ID)), exmpp_xml:attribute('time', integer_to_list(Time))], []),
+	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute(<<"event">>, Event), exmpp_xml:attribute(<<"id">>, ecomponent:prepare_id(ID)), exmpp_xml:attribute(<<"time">>, integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
-	SetTo = exmpp_xml:set_attribute(SetBare, to, exmpp_jid:to_list(Node, Domain, Resource)),	
+	SetTo = exmpp_xml:set_attribute(SetBare, <<"to">>, exmpp_jid:to_list(Node, Domain, Resource)),	
         ecomponent:send(SetTo, ?MODULE),
 	?INFO_MSG("Notify Sent: ~p ~n", [SetTo]),
         {ok, State};
@@ -48,14 +48,14 @@ process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, #jnstate{}=State) ->
                                                       exmpp_xml:attribute("name", <<"Jingle Nodes Relay">>)
                                                       ],
                                      []),
-        IQRegisterFeature1 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute('var', ?NS_JINGLE_NODES_s)],[]),
-        IQRegisterFeature2 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute('var', ?NS_CHANNEL_s)],[]),
+        IQRegisterFeature1 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute(<<"var">>, ?NS_JINGLE_NODES_s)],[]),
+        IQRegisterFeature2 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute(<<"var">>, ?NS_CHANNEL_s)],[]),
         Result = exmpp_iq:result(IQ, exmpp_xml:element(?NS_DISCO_INFO, 'query', [], [Identity, IQRegisterFeature1, IQRegisterFeature2])),
         ecomponent:send(Result, ?MODULE),
 	{ok, State};
 
 process_iq("get", #params{ns=?NS_JINGLE_NODES, iq=IQ}, #jnstate{jid=JID}=State) ->
-	Relay = exmpp_xml:element(undefined, 'relay', [exmpp_xml:attribute('policy',"public"), exmpp_xml:attribute('protocol', "udp"), exmpp_xml:attribute('address', JID)], []),
+	Relay = exmpp_xml:element(undefined, 'relay', [exmpp_xml:attribute(<<"policy">>,"public"), exmpp_xml:attribute(<<"protocol">>, "udp"), exmpp_xml:attribute(<<"address">>, JID)], []),
 	Services = exmpp_xml:element(?NS_JINGLE_NODES, ?NAME_SERVICES, [],[Relay]),
 	Result = exmpp_iq:result(IQ, Services),
 	ecomponent:send(Result, ?MODULE),
@@ -67,7 +67,7 @@ process_iq("get", #params{ns=?NS_PING, iq=IQ}, #jnstate{}=State) ->
         {ok, State};
 
 process_iq("set", #params{ns=?NS_CHANNEL_REDIRECT, payload=Payload, iq=IQ}, #jnstate{}=State) ->
-        ID=exmpp_xml:get_attribute(Payload, "id", ""),
+        ID=exmpp_xml:get_attribute(Payload, <<"id">>, ""),
         process_redirect(Payload, ID),
         Result = exmpp_iq:result(IQ),
         ecomponent:send(Result, ?MODULE),
@@ -100,9 +100,9 @@ call_redirect([], _) ->
 	ok;
 call_redirect(H, PID) ->
         ?INFO_MSG("Call Redirect: ~p~n", [H]),
-        Username=exmpp_xml:get_attribute(H,"username",<<"jingnode">>),
-        Host=exmpp_xml:get_attribute(H,"host",null),
-        Port=exmpp_xml:get_attribute(H,"port",null),
+        Username=exmpp_xml:get_attribute(H, <<"username">>,<<"jingnode">>),
+        Host=exmpp_xml:get_attribute(H,<<"host">>,null),
+        Port=exmpp_xml:get_attribute(H,<<"port">>,null),
 	?INFO_MSG("Call Redirect: ~p ~p ~p ~p~n", [Username, Host, Port, PID]),
 	call_redirect(Username, Host, Port, PID).
 
@@ -114,10 +114,10 @@ call_redirect(Username, Host, Port, PID) ->
 
 get_candidate_elem(Host, A, B, ID) ->
 	Raw_Elem = exmpp_xml:element(?NS_CHANNEL,?NAME_CHANNEL),
-        Elem_A = exmpp_xml:set_attribute(Raw_Elem, "localport", A),
-        Elem_B = exmpp_xml:set_attribute(Elem_A, "remoteport", B),
-	Elem_C = exmpp_xml:set_attribute(Elem_B, "id", ecomponent:prepare_id(ID)),
-        exmpp_xml:set_attribute(Elem_C, "host", Host).
+        Elem_A = exmpp_xml:set_attribute(Raw_Elem, <<"localport">>, A),
+        Elem_B = exmpp_xml:set_attribute(Elem_A, <<"remoteport">>, B),
+	Elem_C = exmpp_xml:set_attribute(Elem_B, <<"id">>, ecomponent:prepare_id(ID)),
+        exmpp_xml:set_attribute(Elem_C, <<"host">>, Host).
 
 allocate_relay(ChannelMonitor, U, PortMonitor) -> allocate_relay(ChannelMonitor, U, 5, PortMonitor).
 allocate_relay(_, U, 0, _) -> 
