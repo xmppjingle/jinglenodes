@@ -48,10 +48,11 @@ init(_) ->
 	{ok, WhiteDomain} = application:get_env(jn_component, whitelist),
 	{ok, PubIP} = application:get_env(jn_component, public_ip),
 	{ok, Handler} = application:get_env(jn_component, handler),
+	{ok, Broadcast} = application:get_env(jn_component, broadcast),
 	prepare_tables(), 
     	ChannelMonitor = scheduleChannelPurge(5000, [], ChannelTimeout),
     	PortMonitor = schedulePortMonitor(InitPort, EndPort),
-    	{ok, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler}}.
+    	{ok, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor, handler=Handler, broadcast=Broadcast}}.
 
 prepare_tables() ->
     mnesia:create_table(jn_relay_service,
@@ -70,7 +71,7 @@ prepare_tables() ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 
-handle_info({iq,#params{type=Type, iq=IQ}=Params}, #jnstate{handler=Handler}=State) ->
+handle_info({iq,#params{type=Type}=Params}, #jnstate{handler=Handler}=State) ->
         lager:info("IQ with Params: ~p~n", [Params]),
         spawn(Handler, process_iq, [Type, Params, State]),
         {noreply, State};

@@ -13,4 +13,4 @@
 -record(jn_relay_service, {address, xml}).
 -record(jn_tracker_service, {address, xml}).
 -record(port_mgr, {minPort, maxPort, port}).
--record(jnstate, {xmppCom, jid, pass, server, port, pubIP, channelMonitor, whiteDomain, maxPerPeriod, periodSeconds, portMonitor, handler}).
+-record(jnstate, {xmppCom, jid, pass, server, port, pubIP, channelMonitor, whiteDomain, maxPerPeriod, periodSeconds, portMonitor, handler, broadcast}).
