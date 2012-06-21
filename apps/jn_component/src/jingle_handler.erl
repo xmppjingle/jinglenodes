@@ -13,7 +13,7 @@ notify_channel(ID, {Node, Domain, Resource}, Event, Time, #jnstate{}=State) ->
 	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute('event', Event), exmpp_xml:attribute('id', ecomponent:prepare_id(ID)), exmpp_xml:attribute('time', integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
 	SetTo = exmpp_xml:set_attribute(SetBare, to, exmpp_jid:to_list(Node, Domain, Resource)),	
-        ecomponent:send(SetTo),
+        ecomponent:send(SetTo, ?MODULE),
 	?INFO_MSG("Notify Sent: ~p ~n", [SetTo]),
         {ok, State};
 notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
@@ -27,18 +27,18 @@ process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubI
 		{ok, PortA, PortB, ID} ->
 			?INFO_MSG("Allocated Port for : ~p ~p~n", [From, ID]),
 			Result = exmpp_iq:result(IQ ,get_candidate_elem(PubIP, PortA, PortB, ID)),
-			ecomponent:send(Result),
+			ecomponent:send(Result, ?MODULE),
 			{ok, State};
 		_ ->
 			?ERROR_MSG("Could Not Allocate Port for : ~p~n", [From]),
 			Error = exmpp_iq:error_without_original(IQ, 'internal-server-error'),
-			ecomponent:send(Error),
+			ecomponent:send(Error, ?MODULE),
 			{error, State}
 		end;
 	true -> 
 		?ERROR_MSG("[Not Acceptable] Could Not Allocate Port for : ~p on ~p~n", [From, WhiteDomain]),
 		Error = exmpp_iq:error_without_original(IQ, 'policy-violation'),
-                ecomponent:send(Error),
+                ecomponent:send(Error, ?MODULE),
 		{error, State}		
 	end;
 
@@ -51,26 +51,26 @@ process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, #jnstate{}=State) ->
         IQRegisterFeature1 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute('var', ?NS_JINGLE_NODES_s)],[]),
         IQRegisterFeature2 = exmpp_xml:element(?NS_DISCO_INFO, 'feature', [exmpp_xml:attribute('var', ?NS_CHANNEL_s)],[]),
         Result = exmpp_iq:result(IQ, exmpp_xml:element(?NS_DISCO_INFO, 'query', [], [Identity, IQRegisterFeature1, IQRegisterFeature2])),
-        ecomponent:send(Result),
+        ecomponent:send(Result, ?MODULE),
 	{ok, State};
 
 process_iq("get", #params{ns=?NS_JINGLE_NODES, iq=IQ}, #jnstate{jid=JID}=State) ->
 	Relay = exmpp_xml:element(undefined, 'relay', [exmpp_xml:attribute('policy',"public"), exmpp_xml:attribute('protocol', "udp"), exmpp_xml:attribute('address', JID)], []),
 	Services = exmpp_xml:element(?NS_JINGLE_NODES, ?NAME_SERVICES, [],[Relay]),
 	Result = exmpp_iq:result(IQ, Services),
-	ecomponent:send(Result),
+	ecomponent:send(Result, ?MODULE),
 	{ok, State};
 
 process_iq("get", #params{ns=?NS_PING, iq=IQ}, #jnstate{}=State) ->
         Result = exmpp_iq:result(IQ),
-        ecomponent:send(Result),
+        ecomponent:send(Result, ?MODULE),
         {ok, State};
 
 process_iq("set", #params{ns=?NS_CHANNEL_REDIRECT, payload=Payload, iq=IQ}, #jnstate{}=State) ->
         ID=exmpp_xml:get_attribute(Payload, "id", ""),
         process_redirect(Payload, ID),
         Result = exmpp_iq:result(IQ),
-        ecomponent:send(Result),
+        ecomponent:send(Result, ?MODULE),
         {ok, State};
 
 process_iq(_, P, #jnstate{}=State) ->
