@@ -184,7 +184,7 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
 	Used = erlang:trunc(bigger(UsedL, UsedR)/1000000),
 	if
 	DeltaL > Timeout orelse DeltaR > Timeout ->
-		?INFO_MSG("Channel Killed: ~p Used for:~pms Processed:~p packets~n", [U, Used, NP]),
+		?INFO_MSG("Channel Killed: ~p Used for:~ps Processed:~p packets~n", [U, Used, NP]),
 		exit(PID, kill),
 		JnComp = whereis(jn_component),
 	 	case is_pid(JnComp) of
