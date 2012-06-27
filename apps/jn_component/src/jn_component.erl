@@ -73,7 +73,6 @@ prepare_tables() ->
 %%--------------------------------------------------------------------
 
 handle_info({iq,#params{type=Type}=Params}, #jnstate{handler=Handler}=State) ->
-        lager:info("IQ with Params: ~p~n", [Params]),
         spawn(Handler, process_iq, [Type, Params, State]),
         {noreply, State};
 
