@@ -9,7 +9,7 @@
 
 -export([notify_channel/5]).
 
-notify_channel(ID, {_Node, _, _}, Event, Time, BJID) ->
+notify_channel(_ID, {_Node, _, _}, Event, Time, BJID) ->
 	 case BJID of
                 undefined ->
                         ok;
