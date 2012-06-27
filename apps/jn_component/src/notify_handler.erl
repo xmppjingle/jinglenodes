@@ -10,13 +10,11 @@
 -export([notify_channel/5]).
 
 notify_channel(ID, {_Node, _, _}, Event, Time, BJID) ->
-	?INFO_MSG("Notify Called ~p~n", [BJID]),
 	 case BJID of
                 undefined ->
                         ok;
 		_ ->
 			NEvent = choose_event(Event),
-        		?INFO_MSG("Broadcast Details: ~p ~p ~p ~p~n", [ID, NEvent, Time, BJID]),
 		        Notify = exmpp_xml:element(?NS_CALL_EVENT, 'query', [],[exmpp_xml:element(undefined, 'event', [exmpp_xml:attribute(<<"key">>, NEvent), exmpp_xml:attribute(<<"value">>, Time)], [])]),
 		        SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
                         Broadcast = exmpp_xml:set_attribute(SetBare, <<"to">>, BJID),

@@ -9,7 +9,6 @@
 -export([notify_channel/5, allocate_relay/3, process_iq/3]).
 
 notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast=BJID, jid=CJID}=State) ->
-        ?INFO_MSG("Notify Details: ~p ~p ~p ~p~n", [ID, exmpp_jid:to_list(Node, Domain, Resource), Event, Time]),
 	Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute(<<"event">>, Event), exmpp_xml:attribute(<<"id">>, ID), exmpp_xml:attribute(<<"time">>, integer_to_list(Time))], []),
         SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
 	case Node of
@@ -21,7 +20,6 @@ notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast
 	SetTo = exmpp_xml:set_attribute(SetBare, <<"to">>, exmpp_jid:to_list(Node, Domain, Resource)),	
         ecomponent:send(SetTo, ?MODULE),
 	Broadcast = erlang:apply(notify_handler, notify_channel, [ID, JID, Event, Time, BJID]),
-	?INFO_MSG("Broadcasting: ~p ~p ~p ~p ~p", [ID, JID, Event, Time, BJID]),
 	case Broadcast of
 		undefined ->
 			ok;
@@ -29,7 +27,6 @@ notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast
 			BroadcastFrom = exmpp_xml:set_attribute(Broadcast, <<"from">>, From),
 			ecomponent:send(BroadcastFrom, ?MODULE)
 	end,
-	?INFO_MSG("Notify Sent: ~p ~n", [SetTo]),
         {ok, State};
 notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 
@@ -37,7 +34,6 @@ notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubIP, channelMonitor=ChannelMonitor, whiteDomain=WhiteDomain, maxPerPeriod=MaxPerPeriod, periodSeconds=PeriodSeconds, portMonitor=PortMonitor}=State) ->
     Permitted = ecomponent:is_allowed(From, WhiteDomain) andalso mod_monitor:accept(From, MaxPerPeriod, PeriodSeconds),	
 	if Permitted == true ->
-		?INFO_MSG("T: ~p~n", [PortMonitor]),
     		case allocate_relay(ChannelMonitor, From, PortMonitor) of
 		{ok, PortA, PortB, ID} ->
 			?INFO_MSG("Allocated Port for : ~p ~p~n", [From, ID]),
@@ -98,11 +94,11 @@ process_redirect(Payload, ID) when erlang:is_binary(ID) ->
         process_redirect(Payload, erlang:binary_to_list(ID));
 process_redirect(Payload, IDstr) ->
         try	
-		?INFO_MSG("P Redirect IDstr: ~p [~p]~n", [IDstr, Payload]),	
+		%?INFO_MSG("P Redirect IDstr: ~p [~p]~n", [IDstr, Payload]),	
 		ID = ecomponent:unprepare_id(IDstr),
-		?INFO_MSG("P Redirect ID: [~p]~n", [ID]),
+		%?INFO_MSG("P Redirect ID: [~p]~n", [ID]),
 		PID = erlang:list_to_pid(ID),
-                ?INFO_MSG("P Redirect ID: [~p]~n", [ID]),
+                %?INFO_MSG("P Redirect ID: [~p]~n", [ID]),
 		process_redirect(Payload, PID)
         catch
                 E:_R ->
@@ -114,7 +110,7 @@ call_redirect([], _) ->
 	?INFO_MSG("Call Redirect BLANK~n", []), 
 	ok;
 call_redirect(H, PID) ->
-        ?INFO_MSG("Call Redirect: ~p~n", [H]),
+        %?INFO_MSG("Call Redirect: ~p~n", [H]),
         Username=exmpp_xml:get_attribute(H, <<"username">>,<<"jingnode">>),
         Host=exmpp_xml:get_attribute(H,<<"host">>,null),
         Port=exmpp_xml:get_attribute(H,<<"port">>,null),
