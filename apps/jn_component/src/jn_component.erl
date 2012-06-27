@@ -181,7 +181,7 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
 	UsedL =  timer:now_diff(TL, CT),
 	DeltaR = timer:now_diff(now(), TR)/1000,
         UsedR =  timer:now_diff(TR, CT),
-	Used = bigger(UsedL, UsedR),
+	Used = bigger(UsedL, UsedR)/1000000,
 	if
 	DeltaL > Timeout orelse DeltaR > Timeout ->
 		?INFO_MSG("Channel Killed: ~p Used for:~pms Processed:~p packets~n", [U, Used, NP]),

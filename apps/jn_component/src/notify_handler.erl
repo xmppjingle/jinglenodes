@@ -15,8 +15,9 @@ notify_channel(ID, {_Node, _, _}, Event, Time, BJID) ->
                 undefined ->
                         ok;
 		_ ->
-        		?INFO_MSG("Broadcast Details: ~p ~p ~p ~p~n", [ID,Event, Time, BJID]),
-		        Notify = exmpp_xml:element(?NS_CALL_EVENT, 'query', [],[exmpp_xml:element(undefined, 'event', [exmpp_xml:attribute(<<"key">>, Event), exmpp_xml:attribute(<<"value">>, "1")], [])]),
+			NEvent = choose_event(Event),
+        		?INFO_MSG("Broadcast Details: ~p ~p ~p ~p~n", [ID, NEvent, Time, BJID]),
+		        Notify = exmpp_xml:element(?NS_CALL_EVENT, 'query', [],[exmpp_xml:element(undefined, 'event', [exmpp_xml:attribute(<<"key">>, NEvent), exmpp_xml:attribute(<<"value">>, Time)], [])]),
 		        SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
                         Broadcast = exmpp_xml:set_attribute(SetBare, <<"to">>, BJID),
 			Broadcast
@@ -24,3 +25,11 @@ notify_channel(ID, {_Node, _, _}, Event, Time, BJID) ->
 
 notify_channel(_, _, _, _, _)-> undefined.
 
+
+choose_event(Event) ->
+	case Event of
+		killed ->
+			'call_killed';
+		_ ->
+			undefined
+	end.
