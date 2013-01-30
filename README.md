@@ -35,3 +35,25 @@ This project is sponsored by NLnet Foundation:
 The Jingle Nodes Logo is a generous contribution from:
 [[http://fernandolins.net Fernando Lins - Graphic and Interface Designer]]
 
+Compiling and Installing
+
+XML parsing library (REQUIRED)
+
+    Tested libraries are:
+           . Expat: recommended. Tested: 2.0.1
+           . LibXML2: only experimental support.
+
+    o  OpenSSL (optional)
+       It's the only TLS engine supported for now.
+           . Tested version:            0.9.8e
+
+    o  zlib (optional)
+       It's the only compression engine supported for now.
+           . Tested version: 1.2.3
+
+Building
+
+rebar clean
+rebar get-deps
+rebar compile
+rebar generate
