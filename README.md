@@ -56,7 +56,7 @@ Suggested Library Install
 
 Building
 
-rebar clean
-rebar get-deps
-rebar compile
-rebar generate
+    rebar clean
+    rebar get-deps
+    rebar compile
+    rebar generate
