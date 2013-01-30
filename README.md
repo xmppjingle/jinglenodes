@@ -51,6 +51,9 @@ XML parsing library (REQUIRED)
        It's the only compression engine supported for now.
            . Tested version: 1.2.3
 
+Suggested Library Install 
+ build-essential make autoconf libxml2 libxml2-dev zlib1g zlib1g-dev libssl-dev libcrypto++ libcrypto++-dev libexpat1-dev
+
 Building
 
 rebar clean
