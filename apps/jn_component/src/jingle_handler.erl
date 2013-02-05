@@ -152,7 +152,7 @@ allocate_relay(U, Tries) ->
             case jingle_relay:start(Port, PortB) of
                 {ok, R} ->
                     ID = erlang:pid_to_list(R), 
-                    gen_server:cast(jn_portmonitor, #relay{pid=R, user=U, id=ID, creationTime=CT}),
+                    gen_server:cast(jn_schedule, #relay{pid=R, user=U, id=ID, creationTime=CT}),
                     {ok, Port, PortB, ID};
                 _ -> 
                     allocate_relay(U, Tries-1)
