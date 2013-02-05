@@ -33,7 +33,7 @@ notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
 
 -spec is_allowed( Domain::string(), List::list(binary()) ) -> boolean().
 
-is_allowed(Domain, List) ->
+is_allowed({_,Domain,_}, List) ->
     lists:member(Domain, List).
 
 
