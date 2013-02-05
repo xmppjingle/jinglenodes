@@ -70,21 +70,21 @@ handle_info({udp, Sock, SrcIP, SrcPort, Data},
     inet:setopts(Sock, [{active, once}]),
     case State#state.last_recv_remote of
         {DstIP, DstPort} ->
-            send(State#state.remote_sock, DstIP, DstPort, Data),
-            {noreply, State#state{last_recv_local = {SrcIP, SrcPort}, lastTimestamp_local= now(), npackets=NPackets+1}};
+            send(State#state.remote_sock, DstIP, DstPort, Data);
         _ ->
-            {noreply, State#state{last_recv_local = {SrcIP, SrcPort}, lastTimestamp_local= now(), npackets=NPackets+1}}
-    end;
+            ok
+    end,
+    {noreply, State#state{last_recv_local = {SrcIP, SrcPort}, lastTimestamp_local= now(), npackets=NPackets+1}};
 handle_info({udp, Sock, SrcIP, SrcPort, Data},
         #state{remote_sock = Sock, npackets=NPackets} = State) ->
     inet:setopts(Sock, [{active, once}]),
     case State#state.last_recv_local of
         {DstIP, DstPort} ->
-            send(State#state.local_sock, DstIP, DstPort, Data),
-            {noreply, State#state{last_recv_remote = {SrcIP, SrcPort}, lastTimestamp_remote = now(), npackets=NPackets+1}};
+            send(State#state.local_sock, DstIP, DstPort, Data);
         _ ->
-            {noreply, State#state{last_recv_remote = {SrcIP, SrcPort}, lastTimestamp_remote = now(), npackets=NPackets+1}}
-    end;
+            ok
+    end,
+    {noreply, State#state{last_recv_remote = {SrcIP, SrcPort}, lastTimestamp_remote = now(), npackets=NPackets+1}};
 handle_info({udp, Sock, SrcIP, SrcPort, Data},
         #state{local_sock_c = Sock} = State) ->
     inet:setopts(Sock, [{active, once}]),  

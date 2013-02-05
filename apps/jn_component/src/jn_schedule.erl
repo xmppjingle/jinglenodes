@@ -134,6 +134,7 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
     end.
 
 check_relays(Relays, Timeout) ->
+    ?INFO_MSG("Check relays~n", []),
 	lists:filter(fun(R) ->
 		check_relay(R, Timeout)
 	end, Relays).
