@@ -1,15 +1,4 @@
-%%%-------------------------------------------------------------------
-%%% File    : jn_component.erl
-%%% Author  : Thiago Camargo <barata7@gmail.com>
-%%% Description : Jingle Nodes Services - External Component
-%%% Provides:
-%%%     * UDP Relay Services
-%%%
-%%% Created : 01 Nov 2009 by Thiago Camargo <barata7@gmail.com>
-%%% Updated : 30 Jan 2013 by Manuel Rubio <bombadil@bosqueviejo.net>
-%%%-------------------------------------------------------------------
-
--module(jn_component).
+-module(jn_portmonitor).
 -behaviour(gen_server).
 
 -define(SERVER, ?MODULE).
@@ -19,12 +8,28 @@
 -include_lib("ecomponent/include/ecomponent.hrl").
 -include("../include/jn_component.hrl").
 
+%% API
+-export([get_port/0]).
+
 %% gen_server callbacks
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([start/2, init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+start(MinPort, MaxPort) ->
+    gen_server:start({local, ?SERVER}, ?MODULE, [MinPort, MaxPort], []).
+
+
+get_port() ->
+	get_port(5).
+get_port(0) -> 
+    ?ERROR_MSG("Problem Retrieving Port Number",[]),
+    {error, "Problem Retrieving Port Number"};
+get_port(T) ->
+	case gen_server:call(?SERVER, get_port, 200) of
+		timeout -> get_port(T-1);
+		Any -> Any
+	end.
 
 %%====================================================================
 %% gen_server callbacks
@@ -38,27 +43,8 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 
-init(_) ->
-    ?INFO_MSG("Loading Application",[]),
-    [Conf] = confetti:fetch(mgmt_conf),
-    prepare_tables(),
-    JNConf = proplists:get_value(jn_component, Conf, []),
-    ChannelTimeout = proplists:get_value(channel_timeout, JNConf),
-    {InitPort, EndPort} = proplists:get_value(port_range, JNConf),
-
-    jn_schedule:start(5000, ChannelTimeout),
-    jn_portmonitor:start(InitPort, EndPort),
-
-    {MaxPerPeriod, PeriodSeconds} = proplists:get_value(throttle, JNConf),
-    {ok, #jnstate{
-        pubIP = proplists:get_value(public_ip, JNConf),
-        jid = proplists:get_value(jid, JNConf),
-        whiteDomain = proplists:get_value(whitelist, JNConf),
-        maxPerPeriod = MaxPerPeriod,
-        periodSeconds = PeriodSeconds,
-        handler = proplists:get_value(handler, JNConf),
-        broadcast = proplists:get_value(broadcast, JNConf)
-    }}.
+init([MinPort, MaxPort]) ->
+	{ok, #port_mgr{minPort=MinPort, maxPort=MaxPort, port=MinPort}}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -66,15 +52,6 @@ init(_) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-
-handle_info({iq,#params{type=Type}=Params}, #jnstate{handler=Handler}=State) ->
-    spawn(Handler, process_iq, [Type, Params, State]),
-    {noreply, State};
-
-handle_info({notify_channel, ID, User, Event, Time}, #jnstate{handler=Handler}=State) ->
-    spawn(Handler, notify_channel, [ID, User, Event, Time, State]),
-    {noreply, State};
-
 handle_info(Record, State) -> 
     ?INFO_MSG("Unknown Info Request: ~p~n", [Record]),
     {noreply, State}.
@@ -98,8 +75,13 @@ handle_cast(_Msg, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
+handle_call(get_port, _From, Port) ->
+	{P, NewPort} = pull_port(Port),
+	{reply, {ok, P}, NewPort};
+handle_call(stop, _From, Port) ->
+	{stop, "Stopping Port Manager", ok, Port};
 handle_call(Info,_From, _State) ->
-    ?INFO_MSG("Received Call: ~p~n", [Info]), 
+    ?ERROR_MSG("Invalid Message Received by Port Monitor: ~p",[Info]),
     {reply, ok, _State}.
 
 %%--------------------------------------------------------------------
@@ -110,10 +92,6 @@ handle_call(Info,_From, _State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, _) -> 
-    gen_server:call(jn_schedule, stop),
-    gen_server:call(jn_portmonitor, stop),
-    application:stop(exmpp),
-    ?INFO_MSG("Forced Terminated Component.", []),
     ok.
 
 %%--------------------------------------------------------------------
@@ -123,16 +101,12 @@ terminate(_Reason, _) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-prepare_tables() ->
-    mnesia:create_table(jn_relay_service,
-            [{disc_only_copies, [node()]},
-             {type, set},
-             {attributes, record_info(fields, jn_relay_service)}]),
-    mnesia:create_table(jn_tracker_service,
-            [{disc_only_copies, [node()]},
-             {type, set},
-             {attributes, record_info(fields, jn_tracker_service)}]).
+pull_port(#port_mgr{minPort=InitPort, maxPort=EndPort, port=P}) when P > EndPort -> 
+    pull_port(#port_mgr{minPort=InitPort, maxPort=EndPort, port=InitPort});
+pull_port(#port_mgr{minPort=InitPort, maxPort=EndPort, port=P}) ->
+    {P, #port_mgr{minPort=InitPort, maxPort=EndPort, port=P+4}}.

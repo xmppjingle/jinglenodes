@@ -1,10 +1,7 @@
 {application, jn_component,
  [{description, "Jingle Relay"},
-  {vsn, "1"},
-  {modules, [jn_component_app, jn_component_sup, jn_component]},
+  {vsn, git},
   {registered, [jnrelay]},
-  {applications, [compiler, syntax_tools, lager]},
+  {applications, [ecomponent]},
   {mod, {jn_component_app,[]}}
  ]}.
-
-

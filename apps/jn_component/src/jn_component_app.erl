@@ -29,12 +29,7 @@ start() ->
 	application:start(jn_component).
 
 start(_StartType, _StartArgs) ->
-    case jn_component_sup:start_link() of
-	{ok, Pid} ->
-	    {ok, Pid};
-	Error ->
-	    Error
-    	end.
+    jn_component_sup:start_link().
 
 %%--------------------------------------------------------------------
 %% @private

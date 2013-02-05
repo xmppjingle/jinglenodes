@@ -1,15 +1,4 @@
-%%%-------------------------------------------------------------------
-%%% File    : jn_component.erl
-%%% Author  : Thiago Camargo <barata7@gmail.com>
-%%% Description : Jingle Nodes Services - External Component
-%%% Provides:
-%%%     * UDP Relay Services
-%%%
-%%% Created : 01 Nov 2009 by Thiago Camargo <barata7@gmail.com>
-%%% Updated : 30 Jan 2013 by Manuel Rubio <bombadil@bosqueviejo.net>
-%%%-------------------------------------------------------------------
-
--module(jn_component).
+-module(jn_schedule).
 -behaviour(gen_server).
 
 -define(SERVER, ?MODULE).
@@ -19,12 +8,32 @@
 -include_lib("ecomponent/include/ecomponent.hrl").
 -include("../include/jn_component.hrl").
 
+%% API
+-export([get_stats/0]).
+
 %% gen_server callbacks
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([start/2, init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+-record(state, {
+	period :: integer(),
+	relays = [] :: list(#relay{}), 
+	timeout :: integer()
+}).
+
+start(Period, Timeout) ->
+    gen_server:start({local, ?SERVER}, ?MODULE, [Period, Timeout], []).
+
+get_stats() ->
+    get_stats(3).
+get_stats(0) -> 
+	-1;
+get_stats(N) ->
+	case gen_server:call(?SERVER, get_active, 100) of
+		timeout -> get_stats(N-1);
+		{result_active, A} -> A
+	end.
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -38,27 +47,8 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 
-init(_) ->
-    ?INFO_MSG("Loading Application",[]),
-    [Conf] = confetti:fetch(mgmt_conf),
-    prepare_tables(),
-    JNConf = proplists:get_value(jn_component, Conf, []),
-    ChannelTimeout = proplists:get_value(channel_timeout, JNConf),
-    {InitPort, EndPort} = proplists:get_value(port_range, JNConf),
-
-    jn_schedule:start(5000, ChannelTimeout),
-    jn_portmonitor:start(InitPort, EndPort),
-
-    {MaxPerPeriod, PeriodSeconds} = proplists:get_value(throttle, JNConf),
-    {ok, #jnstate{
-        pubIP = proplists:get_value(public_ip, JNConf),
-        jid = proplists:get_value(jid, JNConf),
-        whiteDomain = proplists:get_value(whitelist, JNConf),
-        maxPerPeriod = MaxPerPeriod,
-        periodSeconds = PeriodSeconds,
-        handler = proplists:get_value(handler, JNConf),
-        broadcast = proplists:get_value(broadcast, JNConf)
-    }}.
+init([Period, Timeout]) ->
+	{ok, #state{period=Period, timeout=Timeout}, Period}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -66,18 +56,12 @@ init(_) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-
-handle_info({iq,#params{type=Type}=Params}, #jnstate{handler=Handler}=State) ->
-    spawn(Handler, process_iq, [Type, Params, State]),
-    {noreply, State};
-
-handle_info({notify_channel, ID, User, Event, Time}, #jnstate{handler=Handler}=State) ->
-    spawn(Handler, notify_channel, [ID, User, Event, Time, State]),
-    {noreply, State};
-
+handle_info(timeout, #state{relays=Relays,timeout=Timeout}=State) ->
+    Remain = check_relays(Relays, Timeout),
+    {noreply, State#state{relays=Remain}, Timeout};
 handle_info(Record, State) -> 
     ?INFO_MSG("Unknown Info Request: ~p~n", [Record]),
-    {noreply, State}.
+    {noreply, State, State#state.timeout}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
@@ -85,9 +69,11 @@ handle_info(Record, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
+handle_cast(NewRelay, #state{relays=Relays}=State) when is_record(NewRelay, relay) ->
+	{noreply, State#state{relays=[NewRelay|Relays]}, State#state.timeout};
 handle_cast(_Msg, State) ->
     ?INFO_MSG("Received: ~p~n", [_Msg]), 
-    {noreply, State}.
+    {noreply, State, State#state.timeout}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -98,9 +84,15 @@ handle_cast(_Msg, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call(Info,_From, _State) ->
-    ?INFO_MSG("Received Call: ~p~n", [Info]), 
-    {reply, ok, _State}.
+handle_call(get_active, _From, #state{relays=Relays}=State) ->
+	Active = length(Relays),
+	?INFO_MSG("Active Channels ~p~n", [Active]),
+	{reply, {result_active, Active}, State#state.timeout};
+handle_call(stop, _From, State) ->
+	{stop, "Stopping Schedule Loop", ok, State};
+handle_call(Info,_From, State) ->
+    ?ERROR_MSG("Invalid Message Received by Port Monitor: ~p",[Info]),
+    {reply, ok, State, State#state.timeout}.
 
 %%--------------------------------------------------------------------
 %% Function: terminate(Reason, State) -> void()
@@ -110,10 +102,6 @@ handle_call(Info,_From, _State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, _) -> 
-    gen_server:call(jn_schedule, stop),
-    gen_server:call(jn_portmonitor, stop),
-    application:stop(exmpp),
-    ?INFO_MSG("Forced Terminated Component.", []),
     ok.
 
 %%--------------------------------------------------------------------
@@ -123,16 +111,29 @@ terminate(_Reason, _) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-prepare_tables() ->
-    mnesia:create_table(jn_relay_service,
-            [{disc_only_copies, [node()]},
-             {type, set},
-             {attributes, record_info(fields, jn_relay_service)}]),
-    mnesia:create_table(jn_tracker_service,
-            [{disc_only_copies, [node()]},
-             {type, set},
-             {attributes, record_info(fields, jn_tracker_service)}]).
+check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
+    {TL, TR, NP} = gen_server:call(PID, get_timestamp), 
+    DeltaL = timer:now_diff(now(), TL)/1000,
+    UsedL =  timer:now_diff(TL, CT),
+    DeltaR = timer:now_diff(now(), TR)/1000,
+    UsedR =  timer:now_diff(TR, CT),
+    Used = trunc(max(UsedL, UsedR)/1000000),
+    if
+    DeltaL > Timeout orelse DeltaR > Timeout ->
+        ?INFO_MSG("Channel Killed: ~p Used for:~ps Processed:~p packets~n", [U, Used, NP]),
+        exit(PID, kill),
+        jn_component ! {notify_channel, ID, U, killed, Used},
+        false;
+    true -> 
+        true
+    end.
+
+check_relays(Relays, Timeout) ->
+	lists:filter(fun(R) ->
+		check_relay(R, Timeout)
+	end, Relays).
