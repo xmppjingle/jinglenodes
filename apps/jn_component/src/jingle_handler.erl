@@ -23,7 +23,7 @@ notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast
         ], [])
     ),
     SetTo = exmpp_xml:set_attribute(SetBare, <<"to">>, exmpp_jid:to_list(Node, Domain, Resource)),  
-    ecomponent:send(SetTo, ?MODULE),
+    ecomponent:send(SetTo, jn_component),
     Broadcast = notify_handler:notify_channel(ID, JID, Event, Time, BJID),
     case Broadcast of
         undefined ->
