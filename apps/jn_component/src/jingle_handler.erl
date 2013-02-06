@@ -9,26 +9,33 @@
 -export([notify_channel/5, allocate_relay/1, process_iq/3]).
 
 notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast=BJID, jid=CJID}=State) ->
-    Notify = exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [exmpp_xml:attribute(<<"event">>, Event), exmpp_xml:attribute(<<"id">>, ID), exmpp_xml:attribute(<<"time">>, integer_to_list(Time))], []),
-        SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, Notify),
-    case Node of
+    From = case Node of
         undefined ->
-            From = CJID;
+            CJID;
         _ ->
-            From =  erlang:binary_to_list(Node) ++ "@" ++ CJID
+            binary_to_list(Node) ++ "@" ++ CJID
     end,
+    SetBare = exmpp_iq:set(?NS_COMPONENT_ACCEPT, 
+        exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [
+            exmpp_xml:attribute(<<"event">>, Event), 
+            exmpp_xml:attribute(<<"id">>, ID), 
+            exmpp_xml:attribute(<<"time">>, integer_to_list(Time))
+        ], [])
+    ),
     SetTo = exmpp_xml:set_attribute(SetBare, <<"to">>, exmpp_jid:to_list(Node, Domain, Resource)),  
-        ecomponent:send(SetTo, ?MODULE),
-    Broadcast = erlang:apply(notify_handler, notify_channel, [ID, JID, Event, Time, BJID]),
+    ecomponent:send(SetTo, ?MODULE),
+    Broadcast = notify_handler:notify_channel(ID, JID, Event, Time, BJID),
     case Broadcast of
         undefined ->
             ok;
         _ ->
             BroadcastFrom = exmpp_xml:set_attribute(Broadcast, <<"from">>, From),
-            ecomponent:send(BroadcastFrom, ?MODULE)
+            ecomponent:send(BroadcastFrom, jn_component)
     end,
-        {ok, State};
-notify_channel(_, _, _, _, #jnstate{}=State)-> {ok, State}.
+    {ok, State};
+notify_channel(_ID, JID, _Event, _Time, #jnstate{}=State)-> 
+    ?ERROR_MSG("Invalid JID: ~p~n", [JID]),
+    {ok, State}.
 
 
 -spec is_allowed( Domain::string(), List::list(binary()) ) -> boolean().
