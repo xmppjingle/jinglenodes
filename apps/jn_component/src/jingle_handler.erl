@@ -116,7 +116,7 @@ process_redirect(Payload, ID) when erlang:is_binary(ID) ->
 process_redirect(Payload, IDstr) ->
     try 
         ID = ecomponent:unprepare_id(IDstr),
-        PID = erlang:list_to_pid(ID),
+        PID = list2pid(ID),
         process_redirect(Payload, PID)
     catch
         E:_R ->
@@ -158,7 +158,7 @@ allocate_relay(U, Tries) ->
             CT = now(),
             case jingle_relay:start(Port, PortB) of
                 {ok, R} ->
-                    ID = erlang:pid_to_list(R), 
+                    ID = pid2list(R), 
                     gen_server:cast(jn_schedule, #relay{pid=R, user=U, id=ID, creationTime=CT}),
                     {ok, Port, PortB, ID};
                 _ -> 
@@ -168,3 +168,9 @@ allocate_relay(U, Tries) ->
             ?ERROR_MSG("Could Not Allocate Port for : ~p ~p~n", [U, M]),
             {error, -1, -1}
     end.
+
+pid2list(PID) ->
+    binary_to_list(base64:encode(pid_to_list(PID))).
+
+list2pid(Txt) ->
+    list_to_pid(binary_to_list(base64:decode(Txt))).
