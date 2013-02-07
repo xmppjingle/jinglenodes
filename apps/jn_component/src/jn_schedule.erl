@@ -12,7 +12,7 @@
 -export([get_stats/0]).
 
 %% gen_server callbacks
--export([start/2, init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 -record(state, {
@@ -21,8 +21,8 @@
 	timeout :: integer()
 }).
 
-start(Period, Timeout) ->
-    gen_server:start({local, ?SERVER}, ?MODULE, [Period, Timeout], []).
+start_link(Period, Timeout) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Period, Timeout], []).
 
 get_stats() ->
     get_stats(3).
@@ -47,8 +47,12 @@ get_stats(N) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 
-init([Period, Timeout]) ->
-	{ok, #state{period=Period, timeout=Timeout}, Period}.
+init([PeriodSec, TimeoutSec]) ->
+    Period = PeriodSec * 1000,
+    Timeout = TimeoutSec * 1000,
+    ?INFO_MSG("Schedule, Period=~p Timeout=~p~n", [Period, Timeout]),
+    timer:send_after(Period, timeout),
+	{ok, #state{period=Period, timeout=Timeout}}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -56,12 +60,13 @@ init([Period, Timeout]) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info(timeout, #state{relays=Relays,timeout=Timeout}=State) ->
+handle_info(timeout, #state{relays=Relays,timeout=Timeout, period=Period}=State) ->
     Remain = check_relays(Relays, Timeout),
-    {noreply, State#state{relays=Remain}, Timeout};
+    timer:send_after(Period, timeout),
+    {noreply, State#state{relays=Remain}};
 handle_info(Record, State) -> 
     ?INFO_MSG("Unknown Info Request: ~p~n", [Record]),
-    {noreply, State, State#state.timeout}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
@@ -70,10 +75,10 @@ handle_info(Record, State) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast(NewRelay, #state{relays=Relays}=State) when is_record(NewRelay, relay) ->
-	{noreply, State#state{relays=[NewRelay|Relays]}, State#state.timeout};
+	{noreply, State#state{relays=[NewRelay|Relays]}};
 handle_cast(_Msg, State) ->
     ?INFO_MSG("Received: ~p~n", [_Msg]), 
-    {noreply, State, State#state.timeout}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -87,12 +92,12 @@ handle_cast(_Msg, State) ->
 handle_call(get_active, _From, #state{relays=Relays}=State) ->
 	Active = length(Relays),
 	?INFO_MSG("Active Channels ~p~n", [Active]),
-	{reply, {result_active, Active}, State#state.timeout};
+	{reply, {result_active, Active}, State};
 handle_call(stop, _From, State) ->
 	{stop, "Stopping Schedule Loop", ok, State};
 handle_call(Info,_From, State) ->
     ?ERROR_MSG("Invalid Message Received by Port Monitor: ~p",[Info]),
-    {reply, ok, State, State#state.timeout}.
+    {reply, ok, State}.
 
 %%--------------------------------------------------------------------
 %% Function: terminate(Reason, State) -> void()
@@ -126,15 +131,15 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
     if
     DeltaL > Timeout orelse DeltaR > Timeout ->
         ?INFO_MSG("Channel Killed: ~p Used for:~ps Processed:~p packets~n", [U, Used, NP]),
-        exit(PID, kill),
-        jn_component ! {notify_channel, ID, U, killed, Used},
+        gen_server:cast(PID, stop),
+        gen_server:cast(jn_component, {notify_channel, ID, U, killed, Used}),
         false;
     true -> 
         true
     end.
 
 check_relays(Relays, Timeout) ->
-    ?INFO_MSG("Check relays: ~p~n", [Relays]),
+    lager:debug("Check relays: ~p~n", [Relays]),
 	lists:filter(fun(R) ->
 		check_relay(R, Timeout)
 	end, Relays).

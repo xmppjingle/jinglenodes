@@ -20,11 +20,11 @@
 -include("../include/jn_component.hrl").
 
 %% gen_server callbacks
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(State) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, State, []).
 
 %%====================================================================
 %% gen_server callbacks
@@ -38,27 +38,8 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 
-init(_) ->
-    ?INFO_MSG("Loading Application",[]),
-    [Conf] = confetti:fetch(mgmt_conf),
-    prepare_tables(),
-    JNConf = proplists:get_value(jn_component, Conf, []),
-    ChannelTimeout = proplists:get_value(channel_timeout, JNConf),
-    {InitPort, EndPort} = proplists:get_value(port_range, JNConf),
-
-    jn_schedule:start(5000, ChannelTimeout),
-    jn_portmonitor:start(InitPort, EndPort),
-
-    {MaxPerPeriod, PeriodSeconds} = proplists:get_value(throttle, JNConf),
-    {ok, #jnstate{
-        pubIP = proplists:get_value(public_ip, JNConf),
-        jid = proplists:get_value(jid, JNConf),
-        whiteDomain = proplists:get_value(whitelist, JNConf),
-        maxPerPeriod = MaxPerPeriod,
-        periodSeconds = PeriodSeconds,
-        handler = proplists:get_value(handler, JNConf),
-        broadcast = proplists:get_value(broadcast, JNConf)
-    }}.
+init(State) when is_record(State, jnstate) ->
+    {ok, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -71,10 +52,6 @@ handle_info({iq,#params{type=Type}=Params}, #jnstate{handler=Handler}=State) ->
     spawn(Handler, process_iq, [Type, Params, State]),
     {noreply, State};
 
-handle_info({notify_channel, ID, User, Event, Time}, #jnstate{handler=Handler}=State) ->
-    spawn(Handler, notify_channel, [ID, User, Event, Time, State]),
-    {noreply, State};
-
 handle_info(Record, State) -> 
     ?INFO_MSG("Unknown Info Request: ~p~n", [Record]),
     {noreply, State}.
@@ -85,6 +62,10 @@ handle_info(Record, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
+handle_cast({notify_channel, ID, User, Event, Time}, #jnstate{handler=Handler}=State) ->
+    spawn(Handler, notify_channel, [ID, User, Event, Time, State]),
+    {noreply, State};
+
 handle_cast(_Msg, State) ->
     ?INFO_MSG("Received: ~p~n", [_Msg]), 
     {noreply, State}.
@@ -126,13 +107,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-
-prepare_tables() ->
-    mnesia:create_table(jn_relay_service,
-            [{disc_only_copies, [node()]},
-             {type, set},
-             {attributes, record_info(fields, jn_relay_service)}]),
-    mnesia:create_table(jn_tracker_service,
-            [{disc_only_copies, [node()]},
-             {type, set},
-             {attributes, record_info(fields, jn_tracker_service)}]).

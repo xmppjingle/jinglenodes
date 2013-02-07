@@ -58,10 +58,11 @@ init([Port1, Port2], T) ->
 
 handle_call(get_timestamp, _From, State) ->
     {reply, {State#state.lastTimestamp_local, State#state.lastTimestamp_remote, State#state.npackets}, State};
-
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
+handle_cast(stop, State) ->
+    {stop, normal, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 

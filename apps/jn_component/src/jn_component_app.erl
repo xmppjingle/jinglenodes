@@ -2,6 +2,8 @@
 
 -behaviour(application).
 
+-include("../include/jn_component.hrl").
+
 %% Application callbacks
 -export([start/0, start/2, stop/1]).
 
@@ -29,7 +31,24 @@ start() ->
 	application:start(jn_component).
 
 start(_StartType, _StartArgs) ->
-    jn_component_sup:start_link().
+    ?INFO_MSG("Loading Application",[]),
+    [Conf] = confetti:fetch(mgmt_conf),
+    prepare_tables(),
+    JNConf = proplists:get_value(jn_component, Conf, []),
+    {InitPort, EndPort} = proplists:get_value(port_range, JNConf),
+    {MaxPerPeriod, PeriodSeconds} = proplists:get_value(throttle, JNConf),
+    jn_component_sup:start_link(#jnstate{
+        pubIP = proplists:get_value(public_ip, JNConf),
+        jid = proplists:get_value(jid, JNConf),
+        whiteDomain = proplists:get_value(whitelist, JNConf),
+        maxPerPeriod = MaxPerPeriod,
+        channelTimeout = proplists:get_value(channel_timeout, JNConf),
+        initPort = InitPort,
+        endPort = EndPort,
+        periodSeconds = PeriodSeconds,
+        handler = proplists:get_value(handler, JNConf),
+        broadcast = proplists:get_value(broadcast, JNConf)
+    }).
 
 %%--------------------------------------------------------------------
 %% @private
@@ -41,10 +60,20 @@ start(_StartType, _StartArgs) ->
 %% @spec stop(State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-stop(_State) ->
-    io:format("Terminating: ~p~n",[_State]),
+stop(State) ->
+    ?INFO_MSG("Terminating: ~p~n",[State]),
     ok.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+prepare_tables() ->
+    mnesia:create_table(jn_relay_service,
+            [{disc_only_copies, [node()]},
+             {type, set},
+             {attributes, record_info(fields, jn_relay_service)}]),
+    mnesia:create_table(jn_tracker_service,
+            [{disc_only_copies, [node()]},
+             {type, set},
+             {attributes, record_info(fields, jn_tracker_service)}]).
