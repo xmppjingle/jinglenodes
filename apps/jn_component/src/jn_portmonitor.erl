@@ -20,8 +20,13 @@ start_link(MinPort, MaxPort) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [MinPort, MaxPort], []).
 
 
+-spec get_port() -> {ok, Port::integer()} | {error, Reason::string()}.
+
 get_port() ->
 	get_port(5).
+
+-spec get_port(Timeout::integer()) -> {ok, Port::integer()} | {error, Reason::string()}.
+
 get_port(0) -> 
     ?ERROR_MSG("Problem Retrieving Port Number",[]),
     {error, "Problem Retrieving Port Number"};
@@ -79,7 +84,7 @@ handle_call(get_port, _From, Port) ->
 	{P, NewPort} = pull_port(Port),
 	{reply, {ok, P}, NewPort};
 handle_call(stop, _From, Port) ->
-	{stop, "Stopping Port Manager", ok, Port};
+	{stop, normal, ok, Port};
 handle_call(Info,_From, _State) ->
     ?ERROR_MSG("Invalid Message Received by Port Monitor: ~p",[Info]),
     {reply, ok, _State}.

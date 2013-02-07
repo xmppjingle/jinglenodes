@@ -24,8 +24,13 @@
 start_link(Period, Timeout) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Period, Timeout], []).
 
+-spec get_stats() -> integer().
+
 get_stats() ->
     get_stats(3).
+
+-spec get_stats(Timeout::integer()) -> integer().
+
 get_stats(0) -> 
 	-1;
 get_stats(N) ->
@@ -94,7 +99,7 @@ handle_call(get_active, _From, #state{relays=Relays}=State) ->
 	?INFO_MSG("Active Channels ~p~n", [Active]),
 	{reply, {result_active, Active}, State};
 handle_call(stop, _From, State) ->
-	{stop, "Stopping Schedule Loop", ok, State};
+	{stop, normal, ok, State};
 handle_call(Info,_From, State) ->
     ?ERROR_MSG("Invalid Message Received by Port Monitor: ~p",[Info]),
     {reply, ok, State}.
@@ -121,6 +126,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
+-spec check_relay(Relay::#relay{}, Timeout::integer()) -> boolean().
+
 check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
     {TL, TR, NP} = gen_server:call(PID, get_timestamp), 
     DeltaL = timer:now_diff(now(), TL)/1000,
@@ -137,6 +144,8 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
     true -> 
         true
     end.
+
+-spec check_relays(Relays::[#relay{}], Timeout::integer()) -> [#relay{}].
 
 check_relays(Relays, Timeout) ->
     lager:debug("Check relays: ~p~n", [Relays]),
