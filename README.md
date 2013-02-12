@@ -1,11 +1,10 @@
-jinglenodes
-===========
-
 Jingle Nodes Relay
+==================
 
-[[http://blog.jinglenodes.org http://jinglenodes.googlecode.com/svn-history/r146/trunk/sl-Jingle.jpg]]
+[![Logo](http://jinglenodes.googlecode.com/svn-history/r146/trunk/sl-Jingle.jpg)](http://blog.jinglenodes.org)
 
-* What is Jingle Nodes?
+What is Jingle Nodes?
+---------------------
 
 Jingle Nodes is an XMPP Extension that enable users to share and discover P2P Media Relays that can be used to enable Voice and Video Chat via Jingle.
 
@@ -15,11 +14,12 @@ Jingle Nodes comes in place with the goal of making easy to setup relay for Jing
 
 Communication Sharing made simple!
 
-XEP Location: [[http://xmpp.org/extensions/xep-0278.html Jingle Nodes XEP]]
+XEP Location: [Jingle Nodes XEP](http://xmpp.org/extensions/xep-0278.html)
 
-_Technically, Jingle Nodes is a Standard Jingle RTP Server/Proxy, intend to provide easy to use Relay that can be used in ICE-UDP and also on RAW-UDP Jingle Clients._
+Technically, Jingle Nodes is a Standard Jingle RTP Server/Proxy, intend to provide easy to use Relay that can be used in ICE-UDP and also on RAW-UDP Jingle Clients.
 
-* Why Jingle Nodes?
+Why Jingle Nodes?
+-----------------
 
 In the creation of the very first version of the Jingle Protocol, one of the main goals was to achieve a P2P enable protocol, that would depend on XMPP for routing, but would be also able to negotiate sessions and exchange content without main proxy servers like present SIP deployments.
 
@@ -27,11 +27,54 @@ After 5 years we still don't have any massive deployments containing and fully s
 
 That is the problem Jingle Nodes proposes to solve.
 
-[[http://www.gliffy.com/pubdoc/1765239/L.jpg http://www.gliffy.com/pubdoc/1765239/M.jpg]]
+[![Schema](http://www.gliffy.com/pubdoc/1765239/M.jpg)](http://www.gliffy.com/pubdoc/1765239/L.jpg)
 
-This project is sponsored by NLnet Foundation:
-[[http://www.nlnet.nl http://www.nlnet.nl/image/logo.gif]]
+This project is sponsored by NLnet Foundation:  
+[![NLnet Foundation](http://www.nlnet.nl/image/logo.gif)](http://www.nlnet.nl)
 
-The Jingle Nodes Logo is a generous contribution from:
-[[http://fernandolins.net Fernando Lins - Graphic and Interface Designer]]
+The Jingle Nodes Logo is a generous contribution from:  
+[Fernando Lins - Graphic and Interface Designer](http://fernandolins.net)
 
+Installation
+------------
+
+This project can be downloaded from this page as git project and must be compiled with [rebar](git://github.com/basho/rebar.git) and [Erlang/OTP](http://erlang.org). The commands perform:
+
+```
+git clone git://github.com/bosqueviejo/jinglenodes.git
+cd jinglenodes
+rebar get-deps compile generate
+```
+
+In the ```rel/jinglenodes``` directory should be the embeded generation. Can be packed as zip or tar file to put on production.
+
+Configuration
+-------------
+
+The configuration file is in ```rel/jinglenodes/etc/app.config```, you need to configure the following sections:
+
+```erlang
+    {jn_component, [
+        {channel_timeout, 30000},
+        {port_range, {10000, 50000}},
+        {throttle, {10, 60}},
+        {whitelist, [<<"server.com">>, <<"sip.server.com">>]},
+        {public_ip, "88.88.88.88"},
+        {handler, jingle_handler},
+        {broadcast, "events.server.com"}
+    ]},
+```
+
+Note that the info related to [ecomponent](https://github.com/pepeyuilop/ecomponent) can be reviewed in it own site.
+
+The params means:
+
+  * ```channel_timeout```, is the life time of a channel when the RTP/RTCP flow is over.
+  * ```port_range```, the range for select ports (could be from 1024 to 65535).
+  * ```throttle```, has two values:
+    * ```max_per_period``` (the first) is the time (in seconds) between checks relay channels.
+    * ```period_seconds``` (the second) is the timeout (in seconds) for channels.
+  * ```whitelist```, is a list of binaries, each one is related to a domain.
+  * ```public_ip```, is the host as an IP in the IQ request channel result.
+  * ```handler```, the handler to be used. The fix value in this moment is ```jingle_handler```.
+  * ```broadcast```, the server to send the notify events.
