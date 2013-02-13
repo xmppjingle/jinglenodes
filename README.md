@@ -55,13 +55,13 @@ The configuration file is in ```rel/jinglenodes/etc/app.config```, you need to c
 
 ```erlang
     {jn_component, [
-        {channel_timeout, 30000},
         {port_range, {10000, 50000}},
         {throttle, {10, 60}},
         {whitelist, [<<"server.com">>, <<"sip.server.com">>]},
         {public_ip, "88.88.88.88"},
         {handler, jingle_handler},
-        {broadcast, "events.server.com"}
+        {broadcast, "events.server.com"},
+        {discount, 60}
     ]},
 ```
 
@@ -69,7 +69,6 @@ Note that the info related to [ecomponent](https://github.com/pepeyuilop/ecompon
 
 The params means:
 
-  * ```channel_timeout```, is the life time of a channel when the RTP/RTCP flow is over.
   * ```port_range```, the range for select ports (could be from 1024 to 65535).
   * ```throttle```, has two values:
     * ```max_per_period``` (the first) is the time (in seconds) between checks relay channels.
@@ -78,3 +77,4 @@ The params means:
   * ```public_ip```, is the host as an IP in the IQ request channel result.
   * ```handler```, the handler to be used. The fix value in this moment is ```jingle_handler```.
   * ```broadcast```, the server to send the notify events.
+  * ```discount```, reduce the notification time of call duration.

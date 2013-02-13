@@ -8,7 +8,7 @@
 %% API
 -export([notify_channel/5, allocate_relay/1, process_iq/3]).
 
-notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast=BJID, jid=CJID}=State) ->
+notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{discount=D,broadcast=BJID,jid=CJID}=State) ->
     From = case Node of
         undefined ->
             CJID;
@@ -19,7 +19,7 @@ notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{broadcast
         exmpp_xml:element(?NS_JINGLE_NODES_EVENT, 'channel', [
             exmpp_xml:attribute(<<"event">>, Event), 
             exmpp_xml:attribute(<<"id">>, ID), 
-            exmpp_xml:attribute(<<"time">>, integer_to_list(Time))
+            exmpp_xml:attribute(<<"time">>, integer_to_list(min(Time, abs(Time-D))))
         ], [])
     ),
     SetTo = exmpp_xml:set_attribute(SetBare, <<"to">>, exmpp_jid:to_list(Node, Domain, Resource)),  

@@ -25,7 +25,7 @@
 	periodSeconds, 
 	handler, 
 	broadcast,
-	channelTimeout :: integer(),
 	initPort :: integer(),
-	endPort :: integer()
+	endPort :: integer(),
+	discount :: integer()
 }).

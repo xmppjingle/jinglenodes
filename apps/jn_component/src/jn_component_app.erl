@@ -42,12 +42,12 @@ start(_StartType, _StartArgs) ->
         jid = proplists:get_value(jid, JNConf),
         whiteDomain = proplists:get_value(whitelist, JNConf),
         maxPerPeriod = MaxPerPeriod,
-        channelTimeout = proplists:get_value(channel_timeout, JNConf),
         initPort = InitPort,
         endPort = EndPort,
         periodSeconds = PeriodSeconds,
         handler = proplists:get_value(handler, JNConf),
-        broadcast = proplists:get_value(broadcast, JNConf)
+        broadcast = proplists:get_value(broadcast, JNConf),
+        discount = proplists:get_value(discount, JNConf, 0)
     }).
 
 %%--------------------------------------------------------------------
