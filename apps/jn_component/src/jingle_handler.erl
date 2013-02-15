@@ -38,33 +38,19 @@ notify_channel(_ID, JID, _Event, _Time, #jnstate{}=State)->
     {ok, State}.
 
 
--spec is_allowed( Domain::string(), List::list(binary()) ) -> boolean().
-
-is_allowed({_,Domain,_}, List) ->
-    lists:member(Domain, List).
-
-
 %% Create Channel and return details
-process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubIP, whiteDomain=WhiteDomain}=State) ->
-    Permitted = is_allowed(From, WhiteDomain), 
-    if Permitted =:= true ->
-        case allocate_relay(From) of
-            {ok, PortA, PortB, ID} ->
-                ?INFO_MSG("Allocated Port for: ~p ~p~n", [From, ID]),
-                Result = exmpp_iq:result(IQ ,get_candidate_elem(PubIP, PortA, PortB, ID)),
-                ecomponent:send(Result, ?MODULE),
-                {ok, State};
-            _ ->
-                ?ERROR_MSG("Could Not Allocate Port for : ~p~n", [From]),
-                Error = exmpp_iq:error_without_original(IQ, 'internal-server-error'),
-                ecomponent:send(Error, ?MODULE),
-                {error, State}
-        end;
-    true -> 
-        ?ERROR_MSG("[Not Acceptable] Could Not Allocate Port for : ~p on ~p~n", [From, WhiteDomain]),
-        Error = exmpp_iq:error_without_original(IQ, 'policy-violation'),
-                ecomponent:send(Error, ?MODULE),
-        {error, State}      
+process_iq("get", #params{from=From, ns=?NS_CHANNEL, iq=IQ}, #jnstate{pubIP=PubIP}=State) ->
+    case allocate_relay(From) of
+        {ok, PortA, PortB, ID} ->
+            ?INFO_MSG("Allocated Port for: ~p ~p~n", [From, ID]),
+            Result = exmpp_iq:result(IQ ,get_candidate_elem(PubIP, PortA, PortB, ID)),
+            ecomponent:send(Result, ?MODULE),
+            {ok, State};
+        _ ->
+            ?ERROR_MSG("Could Not Allocate Port for : ~p~n", [From]),
+            Error = exmpp_iq:error_without_original(IQ, 'internal-server-error'),
+            ecomponent:send(Error, ?MODULE),
+            {error, State}
     end;
 
 process_iq("get", #params{ns=?NS_DISCO_INFO, iq=IQ}, #jnstate{}=State) ->

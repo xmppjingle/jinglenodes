@@ -79,9 +79,11 @@ handle_cast(_Msg, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call(Info,_From, _State) ->
+handle_call(stop, _From, State) ->
+    {stop, normal, ok, State};
+handle_call(Info,_From, State) ->
     ?INFO_MSG("Received Call: ~p~n", [Info]), 
-    {reply, ok, _State}.
+    {reply, ok, State}.
 
 %%--------------------------------------------------------------------
 %% Function: terminate(Reason, State) -> void()

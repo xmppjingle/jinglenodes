@@ -40,7 +40,6 @@ start(_StartType, _StartArgs) ->
     jn_component_sup:start_link(#jnstate{
         pubIP = proplists:get_value(public_ip, JNConf),
         jid = proplists:get_value(jid, JNConf),
-        whiteDomain = proplists:get_value(whitelist, JNConf),
         maxPerPeriod = MaxPerPeriod,
         initPort = InitPort,
         endPort = EndPort,

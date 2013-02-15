@@ -57,7 +57,6 @@ The configuration file is in ```rel/jinglenodes/etc/app.config```, you need to c
     {jn_component, [
         {port_range, {10000, 50000}},
         {throttle, {10, 60}},
-        {whitelist, [<<"server.com">>, <<"sip.server.com">>]},
         {public_ip, "88.88.88.88"},
         {handler, jingle_handler},
         {broadcast, "events.server.com"},
@@ -73,7 +72,6 @@ The params means:
   * ```throttle```, has two values:
     * ```max_per_period``` (the first) is the time (in seconds) between checks relay channels.
     * ```period_seconds``` (the second) is the timeout (in seconds) for channels.
-  * ```whitelist```, is a list of binaries, each one is related to a domain.
   * ```public_ip```, is the host as an IP in the IQ request channel result.
   * ```handler```, the handler to be used. The fix value in this moment is ```jingle_handler```.
   * ```broadcast```, the server to send the notify events.

@@ -20,7 +20,6 @@
 	server, 
 	port, 
 	pubIP, 
-	whiteDomain, 
 	maxPerPeriod, 
 	periodSeconds, 
 	handler, 
