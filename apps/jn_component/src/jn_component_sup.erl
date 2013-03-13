@@ -2,8 +2,10 @@
 
 -behaviour(supervisor).
 
+-include("../include/jn_component.hrl").
+
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -21,8 +23,8 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(State) when is_record(State, jnstate) ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, State).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -41,7 +43,7 @@ start_link() ->
 %%                     {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
+init(#jnstate{maxPerPeriod = MaxPerPeriod, periodSeconds = PeriodSeconds,initPort = InitPort, endPort = EndPort}=State) ->
     RestartStrategy = one_for_one,
     MaxRestarts = 1000,
     MaxSecondsBetweenRestarts = 3600,
@@ -52,12 +54,12 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    AChild = {jn_component, {jn_component, start_link, []},
-	      Restart, Shutdown, Type, [jn_component]},
-
-    %%io:format("Application Restart Policy: ~p~n",[Restart]),
-
-    {ok, {SupFlags, [AChild]}}.
+    Children = [
+        {jn_component, {jn_component, start_link, [State]}, Restart, Shutdown, Type, [jn_component]},
+        {jn_schedule, {jn_schedule, start_link, [MaxPerPeriod,PeriodSeconds]}, Restart, Shutdown, Type, [jn_schedule]},
+        {jn_portmonitor, {jn_portmonitor, start_link, [InitPort,EndPort]}, Restart, Shutdown, Type, [jn_portmonitor]}
+    ],
+    {ok, {SupFlags, Children}}.
 
 %%%===================================================================
 %%% Internal functions

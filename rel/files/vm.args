@@ -1,6 +1,6 @@
 
 ## Name of the node
--name jn_node@127.0.0.1
+-name jn_node
 
 ## Cookie for distributed erlang
 -setcookie jn_node
@@ -18,4 +18,3 @@
 
 ## Tweak GC to run more often
 -env ERL_FULLSWEEP_AFTER 10
-
