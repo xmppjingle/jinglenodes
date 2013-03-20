@@ -55,6 +55,7 @@ The configuration file is in ```rel/jinglenodes/etc/app.config```, you need to c
 
 ```erlang
     {jn_component, [
+        {jid, "mycomponent.myserver.com"},
         {port_range, {10000, 50000}},
         {throttle, {10, 60}},
         {public_ip, "88.88.88.88"},
@@ -68,6 +69,7 @@ Note that the info related to [ecomponent](https://github.com/pepeyuilop/ecompon
 
 The params means:
 
+  * ```jid```, the component JID.
   * ```port_range```, the range for select ports (could be from 1024 to 65535).
   * ```throttle```, has two values:
     * ```max_per_period``` (the first) is the time (in seconds) between checks relay channels.
