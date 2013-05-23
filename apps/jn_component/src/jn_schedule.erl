@@ -150,6 +150,7 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
 
 check_relays(Relays, Timeout) ->
     lager:debug("Check relays: ~p~n", [Relays]),
+    folsom_metrics:notify({active_relays, length(Relays)}),
 	lists:filter(fun(R) ->
 		check_relay(R, Timeout)
 	end, Relays).
