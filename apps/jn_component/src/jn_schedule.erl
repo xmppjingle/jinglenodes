@@ -55,6 +55,9 @@ get_stats(N) ->
 init([PeriodSec, TimeoutSec]) ->
     Period = PeriodSec * 1000,
     Timeout = TimeoutSec * 1000,
+    folsom_metrics:new_gauge(active_relays),
+    folsom_metrics:notify({active_relays, 1}),
+    ets:insert(metrics, {active_relays, 1}),
     ?INFO_MSG("Schedule, Period=~p Timeout=~p~n", [Period, Timeout]),
     timer:send_after(Period, timeout),
 	{ok, #state{period=Period, timeout=Timeout}}.
@@ -150,6 +153,7 @@ check_relay(#relay{pid= PID, user=U, id=ID, creationTime=CT}, Timeout) ->
 
 check_relays(Relays, Timeout) ->
     lager:debug("Check relays: ~p~n", [Relays]),
+	folsom_metrics:notify({active_relays, length(Relays)}),
 	lists:filter(fun(R) ->
 		check_relay(R, Timeout)
 	end, Relays).
