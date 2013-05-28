@@ -11,6 +11,9 @@
 %%% Application callbacks
 %%%===================================================================
 
+start() ->
+    application:start(jn_component).
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -27,9 +30,6 @@
 %%      StartArgs = term()
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-	application:start(jn_component).
-
 start(_StartType, _StartArgs) ->
     ?INFO_MSG("Loading Application",[]),
     [Conf] = confetti:fetch(mgmt_conf),
