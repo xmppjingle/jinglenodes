@@ -67,8 +67,8 @@ init([Port1, Port2], T) ->
             local_sock_c = Local_Sock_C, 
             remote_sock = Remote_Sock, 
             remote_sock_c = Remote_Sock_C, 
-            lastTimestamp_local = now(), 
-            lastTimestamp_remote = now(), 
+            lastTimestamp_local = os:timestamp(), 
+            lastTimestamp_remote = os:timestamp(), 
             npackets=0
         }};
     {OP1,OP2,OP3,OP4}=Errs ->
@@ -99,7 +99,7 @@ handle_info({udp, Sock, SrcIP, SrcPort, Data},
         _ ->
             ok
     end,
-    {noreply, State#state{last_recv_local={SrcIP, SrcPort}, lastTimestamp_local=now(), npackets=NPackets+1}};
+    {noreply, State#state{last_recv_local={SrcIP, SrcPort}, lastTimestamp_local=os:timestamp(), npackets=NPackets+1}};
 handle_info({udp, Sock, SrcIP, SrcPort, Data},
         #state{remote_sock = Sock, npackets=NPackets} = State) ->
     inet:setopts(Sock, [{active, once}]),
@@ -109,7 +109,7 @@ handle_info({udp, Sock, SrcIP, SrcPort, Data},
         _ ->
             ok
     end,
-    {noreply, State#state{last_recv_remote={SrcIP, SrcPort}, lastTimestamp_remote=now(), npackets=NPackets+1}};
+    {noreply, State#state{last_recv_remote={SrcIP, SrcPort}, lastTimestamp_remote=os:timestamp(), npackets=NPackets+1}};
 handle_info({udp, Sock, SrcIP, SrcPort, Data},
         #state{local_sock_c = Sock} = State) ->
     inet:setopts(Sock, [{active, once}]),  
@@ -119,7 +119,7 @@ handle_info({udp, Sock, SrcIP, SrcPort, Data},
         _ ->
             ok
     end,
-    {noreply, State#state{last_recv_local_c = {SrcIP, SrcPort}, lastTimestamp_local = now()}};
+    {noreply, State#state{last_recv_local_c = {SrcIP, SrcPort}, lastTimestamp_local = os:timestamp()}};
 handle_info({udp, Sock, SrcIP, SrcPort, Data},
         #state{remote_sock_c = Sock} = State) ->
     inet:setopts(Sock, [{active, once}]),
@@ -129,7 +129,7 @@ handle_info({udp, Sock, SrcIP, SrcPort, Data},
         _ ->
             ok
     end,
-    {noreply, State#state{last_recv_remote_c = {SrcIP, SrcPort}, lastTimestamp_remote= now()}};
+    {noreply, State#state{last_recv_remote_c = {SrcIP, SrcPort}, lastTimestamp_remote= os:timestamp()}};
 handle_info({redirect_remote, Username, Host, Port}, #state{remote_sock = Sock, remote_sock_c= _Sock_c}=State) ->
     IPort = list_to_integer(binary_to_list(Port)),
     {ok, IHost} = inet_parse:address(binary_to_list(Host)),
