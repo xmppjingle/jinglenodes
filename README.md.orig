@@ -55,7 +55,6 @@ The configuration file is in ```rel/jinglenodes/etc/app.config```, you need to c
 
 ```erlang
     {jn_component, [
-        {jid, "mycomponent.myserver.com"},
         {port_range, {10000, 50000}},
         {throttle, {10, 60}},
         {public_ip, "88.88.88.88"},
@@ -69,15 +68,7 @@ Note that the info related to [ecomponent](https://github.com/pepeyuilop/ecompon
 
 The params means:
 
-  * ```jid```, the component JID.
-  * ```port_range```, the range for select ports (could be from 1024 to 65535).
-  * ```throttle```, has two values:
-    * ```max_per_period``` (the first) is the time (in seconds) between checks relay channels.
-    * ```period_seconds``` (the second) is the timeout (in seconds) for channels.
-  * ```public_ip```, is the host as an IP in the IQ request channel result.
-  * ```handler```, the handler to be used. The fix value in this moment is ```jingle_handler```.
-  * ```broadcast```, the server to send the notify events.
-  * ```discount```, reduce the notification time of call duration.
+<<<<<<< HEAD
 Compiling and Installing
 
 XML parsing library (REQUIRED)
@@ -103,3 +94,13 @@ Building
     rebar get-deps
     rebar compile
     rebar generate
+=======
+  * ```port_range```, the range for select ports (could be from 1024 to 65535).
+  * ```throttle```, has two values:
+    * ```max_per_period``` (the first) is the time (in seconds) between checks relay channels.
+    * ```period_seconds``` (the second) is the timeout (in seconds) for channels.
+  * ```public_ip```, is the host as an IP in the IQ request channel result.
+  * ```handler```, the handler to be used. The fix value in this moment is ```jingle_handler```.
+  * ```broadcast```, the server to send the notify events.
+  * ```discount```, reduce the notification time of call duration.
+>>>>>>> 53d4a096c33b330fe5a017b24044861ef83b3a57
