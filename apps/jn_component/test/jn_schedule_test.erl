@@ -17,11 +17,22 @@ setup_test_() ->
 	}.
 
 init_per_testcase() ->
+	meck:new(folsom_metrics),
+	meck:expect(folsom_metrics, new_gauge, fun(_) -> ok end),
+	meck:expect(folsom_metrics, notify, fun(_) -> ok end),  
+
+	case ets:info(metrics) of 
+		undefined -> 
+			ets:new(metrics, [named_table, public]);
+		_ ->
+			ok
+	end,
 	jn_schedule:start_link(1, 10),
 	ok.
 
 end_per_testcase(_Config) ->
 	gen_server:call(jn_schedule, stop),
+	meck:unload(folsom_metrics),
 	timer:sleep(500),
 	ok.
 
