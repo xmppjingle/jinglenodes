@@ -8,6 +8,10 @@
 %% API
 -export([notify_channel/5, allocate_relay/1, process_iq/3]).
 
+notify_channel(_ID, _JID, _Event, _Time, #jnstate{jid=undefined}=_State) -> 
+%% Do not broadcast
+ok;
+
 notify_channel(ID, {Node, Domain, Resource}=JID, Event, Time, #jnstate{discount=D,broadcast=BJID,jid=CJID}=State) ->
     From = case Node of
         undefined ->
