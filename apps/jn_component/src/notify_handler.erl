@@ -10,7 +10,7 @@
 -export([notify_channel/5]).
 
 notify_channel(_ID, _JID, _Event, _Time, undefined) ->
-	ok;
+	undefined;
 notify_channel(_ID, {_Node, _, _}, Event, Time, BJID) ->
 	NEvent = choose_event(Event),
     Notify = exmpp_xml:element(?NS_CALL_EVENT, 'query', [],[
