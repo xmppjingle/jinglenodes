@@ -6,7 +6,7 @@ Jingle Nodes Relay
 What is Jingle Nodes?
 ---------------------
 
-Jingle Nodes is an XMPP Extension that enable users to share and discover P2P Media Relays that can be used to enable Voice and Video Chat via Jingle.
+Jingle Nodes is an XMPP Extension that enable users to share and discover P2P Media Relays that can be used to enable Voice and Video Chat via Jingle, developed by Thiago Rocha Camargo.
 
 It is the simplest solution to communicate *freely* with your friends without being attached to a closed service providers like Skype, Telecom nor SIP Provider!
 
